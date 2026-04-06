@@ -40,6 +40,7 @@ class StatusController {
 						this.properties.thresholds().bgTargetBottom(), "bgLow", this.properties.thresholds().bgLow()));
 
 		Map<String, Object> result = new LinkedHashMap<>();
+		result.put("runtimeState", "loaded");
 		result.put("status", "ok");
 		result.put("name", "nightscout");
 		result.put("version", "15.0.6-java");
