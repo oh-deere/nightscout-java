@@ -31,6 +31,8 @@ class SecurityConfig {
 				.permitAll()
 				.requestMatchers("/api/v3/version", "/api/v3/status")
 				.permitAll()
+				.requestMatchers("/socket.io/**")
+				.permitAll()
 				// Read endpoints require authentication
 				.requestMatchers(HttpMethod.GET, "/api/v1/**")
 				.authenticated()
