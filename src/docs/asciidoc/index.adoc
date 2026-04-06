@@ -1,0 +1,11 @@
+= Nightscout Java API
+:doctype: book
+:toc: left
+:toclevels: 2
+:source-highlighter: highlightjs
+
+== Overview
+
+Nightscout CGM server — Java 25 / Spring Boot 4 / PostgreSQL.
+
+API documentation generated from tests using Spring RestDocs.

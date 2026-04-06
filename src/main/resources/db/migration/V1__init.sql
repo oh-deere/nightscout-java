@@ -1,0 +1,2 @@
+-- Placeholder migration to allow Flyway to initialize.
+-- Full schema will be added in ticket 02.
