@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import se.ohdeere.nightscout.service.entries.DataUpdateBroadcaster;
 import se.ohdeere.nightscout.service.entries.EntryService;
 import se.ohdeere.nightscout.storage.entries.Entry;
 import se.ohdeere.nightscout.storage.entries.EntryRepository;
@@ -21,8 +22,11 @@ class EntryServiceImpl implements EntryService {
 
 	private final EntryRepository entryRepository;
 
-	EntryServiceImpl(EntryRepository entryRepository) {
+	private final DataUpdateBroadcaster broadcaster;
+
+	EntryServiceImpl(EntryRepository entryRepository, DataUpdateBroadcaster broadcaster) {
 		this.entryRepository = entryRepository;
+		this.broadcaster = broadcaster;
 	}
 
 	@Override
@@ -60,6 +64,9 @@ class EntryServiceImpl implements EntryService {
 			catch (DuplicateKeyException ex) {
 				LOG.debug("Duplicate entry skipped: type={}, sysTime={}", entry.type(), entry.sysTime());
 			}
+		}
+		if (!saved.isEmpty()) {
+			this.broadcaster.broadcastNewEntries(saved);
 		}
 		return saved;
 	}
