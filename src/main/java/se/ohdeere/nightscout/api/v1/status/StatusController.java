@@ -2,6 +2,7 @@ package se.ohdeere.nightscout.api.v1.status;
 
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,16 +23,33 @@ class StatusController {
 	@GetMapping({ "/api/v1/status", "/api/v1/status.json" })
 	Map<String, Object> status() {
 		List<String> enabledPlugins = Arrays.asList(this.properties.enable().split("\\s+"));
-		return Map.of("status", "ok", "name", "nightscout", "version", "15.0.6-java", "serverTime",
-				Instant.now().toString(), "serverTimeEpoch", Instant.now().toEpochMilli(), "apiEnabled", true,
-				"careportalEnabled", true, "settings",
-				Map.of("units", this.properties.units(), "timeFormat", this.properties.timeFormat(), "theme",
-						this.properties.theme(), "language", this.properties.language(), "enable", enabledPlugins,
-						"thresholds",
-						Map.of("bgHigh", this.properties.thresholds().bgHigh(), "bgTargetTop",
-								this.properties.thresholds().bgTargetTop(), "bgTargetBottom",
-								this.properties.thresholds().bgTargetBottom(), "bgLow",
-								this.properties.thresholds().bgLow())));
+		Map<String, Object> settings = new LinkedHashMap<>();
+		settings.put("units", this.properties.units());
+		settings.put("timeFormat", this.properties.timeFormat());
+		settings.put("nightMode", this.properties.nightMode());
+		settings.put("theme", this.properties.theme());
+		settings.put("language", this.properties.language());
+		settings.put("showPlugins", this.properties.showPlugins());
+		settings.put("enable", enabledPlugins);
+		settings.put("alarmTypes", List.of(this.properties.alarmTypes()));
+		settings.put("customTitle", this.properties.customTitle());
+		settings.put("authDefaultRoles", this.properties.authDefaultRoles());
+		settings.put("thresholds",
+				Map.of("bgHigh", this.properties.thresholds().bgHigh(), "bgTargetTop",
+						this.properties.thresholds().bgTargetTop(), "bgTargetBottom",
+						this.properties.thresholds().bgTargetBottom(), "bgLow", this.properties.thresholds().bgLow()));
+
+		Map<String, Object> result = new LinkedHashMap<>();
+		result.put("status", "ok");
+		result.put("name", "nightscout");
+		result.put("version", "15.0.6-java");
+		result.put("serverTime", Instant.now().toString());
+		result.put("serverTimeEpoch", Instant.now().toEpochMilli());
+		result.put("apiEnabled", true);
+		result.put("careportalEnabled", enabledPlugins.contains("careportal"));
+		result.put("boluscalcEnabled", enabledPlugins.contains("boluscalc"));
+		result.put("settings", settings);
+		return result;
 	}
 
 }
