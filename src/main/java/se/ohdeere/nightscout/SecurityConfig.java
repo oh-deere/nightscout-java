@@ -27,6 +27,8 @@ class SecurityConfig {
 				.permitAll()
 				.requestMatchers(HttpMethod.GET, "/api/v1/verifyauth")
 				.permitAll()
+				.requestMatchers(HttpMethod.GET, "/api/v1/adminnotifies")
+				.permitAll()
 				.requestMatchers("/api/v3/version", "/api/v3/status")
 				.permitAll()
 				// Read endpoints require authentication
