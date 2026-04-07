@@ -33,12 +33,23 @@ class AuthorizationController {
 		return ResponseEntity.ok(Map.of("token", token, "sub", auth.subject(), "permissionGroups", auth.permissions()));
 	}
 
-	@GetMapping("/api/v3/authorization/request/{accessToken}")
+	@GetMapping({ "/api/v2/authorization/request/{accessToken}", "/api/v3/authorization/request/{accessToken}" })
 	ResponseEntity<Map<String, Object>> exchangeToken(@PathVariable String accessToken) {
-		return this.authService.authenticate(null, null, accessToken).map(auth -> {
-			String jwt = this.authService.issueToken(auth.subject(), auth.permissions(), 3600);
-			return ResponseEntity.ok(Map.<String, Object>of("token", jwt, "sub", auth.subject()));
-		}).orElse(ResponseEntity.status(401).body(Map.of("message", "Invalid token")));
+		// Try as api-secret hash first (40 hex chars = SHA-1), then as JWT
+		var auth = this.authService.authenticate(accessToken, null, null);
+		if (auth.isEmpty()) {
+			auth = this.authService.authenticate(null, accessToken, null);
+		}
+		if (auth.isEmpty()) {
+			auth = this.authService.authenticate(null, null, accessToken);
+		}
+		return auth.map(a -> {
+			String jwt = this.authService.issueToken(a.subject(), a.permissions(), 3600);
+			long iat = System.currentTimeMillis() / 1000;
+			long exp = iat + 3600;
+			return ResponseEntity.<Map<String, Object>>ok(Map.of("token", jwt, "sub", a.subject(), "permissionGroups",
+					a.permissions(), "iat", iat, "exp", exp));
+		}).orElseGet(() -> ResponseEntity.status(401).body(Map.of("message", "Invalid token")));
 	}
 
 }

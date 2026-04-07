@@ -39,17 +39,19 @@ class DeviceStatusController {
 	}
 
 	@PostMapping({ "/api/v1/devicestatus", "/api/v1/devicestatus.json" })
-	ResponseEntity<String> postDeviceStatus(@RequestBody List<Map<String, Object>> statusList) {
+	ResponseEntity<List<Map<String, Object>>> postDeviceStatus(@RequestBody List<Map<String, Object>> statusList) {
 		AuthHelper.requirePermission("devicestatus", "create");
+		List<Map<String, Object>> saved = new java.util.ArrayList<>();
 		for (Map<String, Object> status : statusList) {
 			String rawJson = this.objectMapper.writeValueAsString(status);
 			String device = (String) status.get("device");
 			DeviceStatus ds = new DeviceStatus(null, Instant.now(), device, jsonValueForKey(status, "uploader"),
 					jsonValueForKey(status, "pump"), jsonValueForKey(status, "openaps"),
 					jsonValueForKey(status, "loop"), jsonValueForKey(status, "xdripjs"), JsonValue.of(rawJson));
-			this.deviceStatusRepository.save(ds);
+			DeviceStatus persisted = this.deviceStatusRepository.save(ds);
+			saved.add(toMap(persisted));
 		}
-		return ResponseEntity.ok("{}");
+		return ResponseEntity.ok(saved);
 	}
 
 	@DeleteMapping("/api/v1/devicestatus/{id}")

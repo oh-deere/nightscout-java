@@ -79,7 +79,27 @@ class EntriesController {
 		return ResponseEntity.status(HttpStatus.OK).body(saved.stream().map(EntryDto::from).toList());
 	}
 
-	@DeleteMapping("/api/v1/entries/{id}")
+	/**
+	 * Lookup a single entry by id (UUID). Used by some uploaders that POST then GET to
+	 * confirm. The regex constraint prevents conflicts with the literal {@code /current}
+	 * and {@code /sgv} paths above.
+	 */
+	@GetMapping("/api/v1/entries/{id:[0-9a-fA-F-]{36}}")
+	ResponseEntity<EntryDto> getEntryById(@PathVariable String id) {
+		AuthHelper.requirePermission("entries", "read");
+		try {
+			UUID uuid = UUID.fromString(id);
+			return this.entryService.findById(uuid)
+				.map(EntryDto::from)
+				.map(ResponseEntity::ok)
+				.orElseGet(() -> ResponseEntity.notFound().build());
+		}
+		catch (IllegalArgumentException ex) {
+			return ResponseEntity.notFound().build();
+		}
+	}
+
+	@DeleteMapping("/api/v1/entries/{id:[0-9a-fA-F-]{36}}")
 	ResponseEntity<Void> deleteEntry(@PathVariable UUID id) {
 		AuthHelper.requirePermission("entries", "delete");
 		this.entryService.deleteById(id);

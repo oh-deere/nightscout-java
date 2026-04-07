@@ -29,6 +29,10 @@ class SecurityConfig {
 				.permitAll()
 				.requestMatchers("/api/v3/version", "/api/v3/status")
 				.permitAll()
+				// Token exchange endpoints — credential is the path variable, no header
+				// auth needed
+				.requestMatchers("/api/v2/authorization/request/**", "/api/v3/authorization/request/**")
+				.permitAll()
 				// MCP endpoints (Spring AI starter)
 				.requestMatchers("/sse", "/mcp/**")
 				.permitAll()

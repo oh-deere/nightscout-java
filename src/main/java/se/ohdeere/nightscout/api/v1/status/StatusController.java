@@ -20,6 +20,11 @@ class StatusController {
 		this.properties = properties;
 	}
 
+	@GetMapping("/api/versions")
+	Map<String, Object> versions() {
+		return Map.of("versions", List.of("1", "2", "3"), "current", "3");
+	}
+
 	@GetMapping({ "/api/v1/status", "/api/v1/status.json" })
 	Map<String, Object> status() {
 		List<String> enabledPlugins = Arrays.asList(this.properties.enable().split("\\s+"));

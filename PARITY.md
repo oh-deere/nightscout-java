@@ -187,27 +187,33 @@ We **don't need to support the legacy UI** since we built our own React frontend
 
 ---
 
+## Status
+
+**Updated 2026-04-07**: All Tier-1 must-have items implemented and verified by Playwright e2e
+tests (`e2e/`). 34 API tests pass against a running instance. xDrip+ and AAPS uploaders
+should now work end-to-end.
+
 ## Critical gaps to close before go-live
 
 These are the items I'd actually fix before deploying to k3s and pointing real CGM uploaders at it:
 
-### Must-have (uploader compatibility)
+### Must-have (uploader compatibility) — ✅ DONE
 
-1. **`PUT /api/v1/treatments`** — AAPS uses this to edit existing treatments
-2. **`PUT /api/v1/profile`** — Profile updates from AAPS
-3. **`GET /api/v1/profile/current`** — AAPS reads the active profile here
-4. **`GET /api/v1/profiles`** alias — Defensive (some old clients hit it)
-5. **`GET /api/v2/authorization/request/:accessToken`** — Token-based auth for uploaders that prefer JWT
-6. **Activity controller (CRUD)** — We have the storage layer but no API
-7. **`/api/v3/<col>` for treatments + devicestatus + profile** — Same shape we already have for entries; AAPS uses v3 sync when available
+1. ✅ **`PUT /api/v1/treatments`** — AAPS uses this to edit existing treatments
+2. ✅ **`PUT /api/v1/profile`** — Profile updates from AAPS
+3. ✅ **`GET /api/v1/profile/current`** — AAPS reads the active profile here
+4. ✅ **`GET /api/v1/profiles`** alias — Defensive (some old clients hit it)
+5. ✅ **`GET /api/v2/authorization/request/:accessToken`** — Token-based auth for uploaders that prefer JWT
+6. ✅ **Activity controller (CRUD)** — Full CRUD wired
+7. ✅ **`/api/v3/<col>` for treatments + devicestatus + profile** — Generic CRUD for all three collections
 
-### Should-have (better client coverage)
+### Should-have (better client coverage) — ✅ DONE
 
-8. **`GET /api/v3/<col>/history/:lastModified`** — Incremental sync for AAPS/xDrip+/Loop
-9. **`/api/v3/lastModified` should include all collections**, not just entries
-10. **`GET /api/v1/entries/:spec`** — Fetch one entry by id; some tools use it after POST
-11. **`GET /api/versions`** — One-line endpoint, trivial fix
-12. **`GET /api/v1/notifications/ack`** — Switch our endpoint from POST-only to also accept GET with query params (matches AAPS)
+8. ✅ **`GET /api/v3/<col>/history/:lastModified`** — Incremental sync for treatments / devicestatus / profile
+9. ✅ **`/api/v3/lastModified` includes all collections** — entries + treatments + profile + devicestatus
+10. ✅ **`GET /api/v1/entries/:spec`** — Fetch one entry by UUID
+11. ✅ **`GET /api/versions`** — One-line endpoint
+12. ✅ **`GET /api/v1/notifications/ack`** — GET form (AAPS) + POST form (xDrip+) both work
 
 ### Nice-to-have (deferred)
 

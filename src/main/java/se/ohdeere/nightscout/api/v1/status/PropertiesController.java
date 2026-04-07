@@ -64,9 +64,25 @@ class PropertiesController {
 	}
 
 	@PostMapping("/api/v1/notifications/ack")
-	Map<String, String> acknowledgeAlarm(@RequestBody Map<String, Object> body) {
+	Map<String, String> acknowledgeAlarm(@RequestBody(required = false) Map<String, Object> body) {
+		return doAcknowledge(body != null ? body : Map.of());
+	}
+
+	/**
+	 * Upstream Nightscout exposes notification ack as a GET with query parameters. AAPS
+	 * uses this form, while xDrip+ uses POST.
+	 */
+	@GetMapping("/api/v1/notifications/ack")
+	Map<String, String> acknowledgeAlarmGet(
+			@org.springframework.web.bind.annotation.RequestParam(required = false) Integer level,
+			@org.springframework.web.bind.annotation.RequestParam(required = false) String group,
+			@org.springframework.web.bind.annotation.RequestParam(required = false) Integer silenceMinutes) {
+		return doAcknowledge(Map.of("level", level != null ? level : 0, "group", group != null ? group : "",
+				"silenceMinutes", silenceMinutes != null ? silenceMinutes : 30));
+	}
+
+	private Map<String, String> doAcknowledge(Map<String, Object> body) {
 		AuthHelper.requirePermission("notifications", "create");
-		int level = (body.get("level") instanceof Number n) ? n.intValue() : 0;
 		int silenceMinutes = (body.get("silenceMinutes") instanceof Number n) ? n.intValue() : 30;
 		AlarmEngine.Alarm current = this.alarmEngine.currentAlarm();
 		if (current != null) {
