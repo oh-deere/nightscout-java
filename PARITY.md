@@ -173,10 +173,24 @@ Plus query-param ops on the GET search (`<field>$eq`, `$gte`, `$lt`, `$in`, `$re
 **AAPS will partially work** (uploads + reads). Editing treatments and v3 sync won't.
 
 ### What Loop (iOS) uses
+
+After auditing LoopKit's `NightscoutClient.swift`, **Loop only uses v1 + one v2 endpoint** —
+no v3 calls anywhere:
+
 - `POST /api/v1/devicestatus` (heavy use) — ✅
-- `POST /api/v1/treatments` — ✅
-- `GET /api/v1/profile` — ✅
-- `GET /api/v3/...` for sync — ❌ partial
+- `POST /api/v1/treatments` — ✅ (preserves `syncIdentifier` and `insulinType`)
+- `PUT /api/v1/treatments` — ✅
+- `DELETE /api/v1/treatments/{_id}` — ✅
+- `GET /api/v1/treatments?find[created_at][$gte|$lte]=...` — ✅
+- `POST /api/v1/entries` — ✅
+- `GET /api/v1/entries?find[dateString][$gte|$lte]=...` — ✅
+- `POST /api/v1/profile`, `PUT /api/v1/profile` — ✅
+- `GET /api/v1/profile/current` — ✅
+- `GET /api/v1/profiles?find[startDate][$gte|$lte]=...` — ✅
+- `GET /api/v1/experiments/test` (auth probe) — ✅
+- `POST /api/v2/notifications/loop` (remote override / bolus / carbs) — ✅
+- `api-secret` SHA-1 header auth — ✅
+- HTTP 200 responses with array of `_id`-bearing objects — ✅
 
 ### What the **legacy** Nightscout web UI requires
 - `/socket.io` namespace with authorize event — ❌
@@ -189,9 +203,9 @@ We **don't need to support the legacy UI** since we built our own React frontend
 
 ## Status
 
-**Updated 2026-04-07**: All Tier-1 must-have items implemented and verified by Playwright e2e
-tests (`e2e/`). 34 API tests pass against a running instance. xDrip+ and AAPS uploaders
-should now work end-to-end.
+**Updated 2026-04-07**: All Tier-1 items + full Loop compatibility implemented and verified
+by **45 Playwright e2e tests** against a running instance. xDrip+, AAPS, and LoopKit/Loop
+uploaders should all work end-to-end.
 
 ## Critical gaps to close before go-live
 
@@ -229,3 +243,28 @@ These are the items I'd actually fix before deploying to k3s and pointing real C
 - `/translations`, `/pebble`, Alexa, Google Home, Pushover
 - `.csv`/`.svg`/`.png` output formats (reports tools)
 - Legacy web UI helper endpoints (`/api/v1/adminnotifies`)
+
+---
+
+## Loop (LoopKit) compatibility
+
+After research into LoopKit/Loop's `NightscoutClient.swift` showed Loop uses only the v1
+surface plus `POST /api/v2/notifications/loop`, the following changes were made for full
+parity:
+
+- ✅ **`/api/v1/experiments/test`** — Loop's auth probe before doing real work
+- ✅ **`POST /api/v2/notifications/loop`** — Loop's remote command channel (override
+  start/cancel, remote bolus, remote carbs). We persist the request as a treatment so it
+  shows up in the treatment log; the APNs side-channel for actually triggering Loop is
+  intentionally not implemented (single-user setup, Loop reads it back from the treatment
+  stream).
+- ✅ **`syncIdentifier` and `insulinType` columns** added to treatments via Flyway V2
+  migration. Loop's stable client-side ids and insulin metadata are now persisted and
+  round-tripped verbatim.
+- ✅ **POST responses** are JSON arrays of `_id`-bearing objects with HTTP 200 (not 201/204).
+  Loop treats anything else as a failure.
+- ✅ **`find[startDate][$gte|$lte]`** filter on `/api/v1/profiles` for Loop's profile sync.
+- ✅ **`find[dateString][$gte|$lte]`** filter on `/api/v1/entries` for Loop's entry sync.
+
+11 Loop-specific e2e tests in `e2e/tests/loop-compatibility.spec.ts` lock these
+behaviors in.

@@ -92,6 +92,8 @@ class TreatmentsController {
 					dto.glucose() != null ? dto.glucose() : existing.glucose(),
 					dto.glucoseType() != null ? dto.glucoseType() : existing.glucoseType(),
 					dto.duration() != null ? dto.duration() : existing.duration(), existing.utcOffset(),
+					dto.syncIdentifier() != null ? dto.syncIdentifier() : existing.syncIdentifier(),
+					dto.insulinType() != null ? dto.insulinType() : existing.insulinType(),
 					existing.details() != null ? existing.details() : JsonValue.empty());
 			return ResponseEntity.ok(TreatmentDto.from(this.treatmentRepository.save(merged)));
 		}).orElseGet(() -> ResponseEntity.notFound().build());

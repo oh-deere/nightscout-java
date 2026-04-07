@@ -25,6 +25,17 @@ class StatusController {
 		return Map.of("versions", List.of("1", "2", "3"), "current", "3");
 	}
 
+	/**
+	 * Loop uses this as a 200 auth probe before doing real work. Upstream Nightscout
+	 * gates it on {@code authorization:debug:test}; we accept any caller with read
+	 * access.
+	 */
+	@GetMapping("/api/v1/experiments/test")
+	Map<String, Object> experimentsTest() {
+		se.ohdeere.nightscout.api.auth.AuthHelper.requirePermission("entries", "read");
+		return Map.of("status", "ok");
+	}
+
 	@GetMapping({ "/api/v1/status", "/api/v1/status.json" })
 	Map<String, Object> status() {
 		List<String> enabledPlugins = Arrays.asList(this.properties.enable().split("\\s+"));

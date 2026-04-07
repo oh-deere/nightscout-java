@@ -144,7 +144,7 @@ class V3TreatmentsController {
 				createdAtStr != null ? createdAtStr : createdAt.toString(), createdAt, stringOf(body.get("enteredBy")),
 				stringOf(body.get("notes")), doubleOf(body.get("insulin")), doubleOf(body.get("carbs")),
 				doubleOf(body.get("glucose")), stringOf(body.get("glucoseType")), doubleOf(body.get("duration")), 0,
-				JsonValue.empty());
+				stringOf(body.get("syncIdentifier")), stringOf(body.get("insulinType")), JsonValue.empty());
 	}
 
 	private Treatment mergeBody(Treatment existing, Map<String, Object> body) {
@@ -160,7 +160,10 @@ class V3TreatmentsController {
 				body.containsKey("glucose") ? doubleOf(body.get("glucose")) : existing.glucose(),
 				body.containsKey("glucoseType") ? stringOf(body.get("glucoseType")) : existing.glucoseType(),
 				body.containsKey("duration") ? doubleOf(body.get("duration")) : existing.duration(),
-				existing.utcOffset(), existing.details() != null ? existing.details() : JsonValue.empty());
+				existing.utcOffset(),
+				body.containsKey("syncIdentifier") ? stringOf(body.get("syncIdentifier")) : existing.syncIdentifier(),
+				body.containsKey("insulinType") ? stringOf(body.get("insulinType")) : existing.insulinType(),
+				existing.details() != null ? existing.details() : JsonValue.empty());
 	}
 
 	private Map<String, Object> toV3Map(Treatment t) {
@@ -189,6 +192,12 @@ class V3TreatmentsController {
 		}
 		if (t.duration() != null) {
 			map.put("duration", t.duration());
+		}
+		if (t.syncIdentifier() != null) {
+			map.put("syncIdentifier", t.syncIdentifier());
+		}
+		if (t.insulinType() != null) {
+			map.put("insulinType", t.insulinType());
 		}
 		map.put("srvModified", t.createdAt().toEpochMilli());
 		map.put("isValid", true);
