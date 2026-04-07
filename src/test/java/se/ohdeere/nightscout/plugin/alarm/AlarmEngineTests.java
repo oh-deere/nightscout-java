@@ -16,6 +16,7 @@ import se.ohdeere.nightscout.NightscoutProperties.Thresholds;
 import se.ohdeere.nightscout.plugin.PluginResult;
 import se.ohdeere.nightscout.plugin.ar2.Ar2Plugin;
 import se.ohdeere.nightscout.service.admin.EffectiveSettings;
+import se.ohdeere.nightscout.storage.alarm.AlarmHistoryRepository;
 import se.ohdeere.nightscout.storage.alarm.AlarmSnooze;
 import se.ohdeere.nightscout.storage.alarm.AlarmSnoozeRepository;
 import se.ohdeere.nightscout.storage.entries.Entry;
@@ -40,6 +41,8 @@ class AlarmEngineTests {
 
 	private AlarmSnoozeRepository snoozes;
 
+	private AlarmHistoryRepository history;
+
 	private final Map<String, AlarmSnooze> snoozeStore = new ConcurrentHashMap<>();
 
 	private AlarmEngine engine;
@@ -50,6 +53,7 @@ class AlarmEngineTests {
 		this.effective = Mockito.mock(EffectiveSettings.class);
 		this.ar2 = Mockito.mock(Ar2Plugin.class);
 		this.snoozes = Mockito.mock(AlarmSnoozeRepository.class);
+		this.history = Mockito.mock(AlarmHistoryRepository.class);
 		this.snoozeStore.clear();
 
 		when(this.effective.thresholds()).thenReturn(new Thresholds(260, 180, 80, 55));
@@ -81,7 +85,7 @@ class AlarmEngineTests {
 			return active;
 		});
 
-		this.engine = new AlarmEngine(this.entries, this.effective, this.ar2, this.snoozes);
+		this.engine = new AlarmEngine(this.entries, this.effective, this.ar2, this.snoozes, this.history);
 	}
 
 	@Test

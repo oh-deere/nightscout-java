@@ -218,6 +218,19 @@ function KeysTab() {
 
 /* ---------- Runtime settings ---------- */
 
+const KNOWN_KEYS: { key: string; label: string; help: string }[] = [
+  { key: 'units', label: 'Units', help: '"mg/dl" or "mmol/l"' },
+  { key: 'customTitle', label: 'Custom title', help: 'Header title in the dashboard' },
+  { key: 'thresholds.bgHigh', label: 'BG urgent high (mg/dL)', help: 'Number, e.g. 260' },
+  { key: 'thresholds.bgTargetTop', label: 'BG target top (mg/dL)', help: 'Number, e.g. 180' },
+  { key: 'thresholds.bgTargetBottom', label: 'BG target bottom (mg/dL)', help: 'Number, e.g. 80' },
+  { key: 'thresholds.bgLow', label: 'BG urgent low (mg/dL)', help: 'Number, e.g. 55' },
+  { key: 'alarmTimeagoWarnMins', label: 'Stale data warn (min)', help: 'Number, e.g. 15' },
+  { key: 'alarmTimeagoUrgentMins', label: 'Stale data urgent (min)', help: 'Number, e.g. 30' },
+  { key: 'delta.warn', label: 'Rate warn (mg/dL per 5 min)', help: 'Number, e.g. 15' },
+  { key: 'delta.urgent', label: 'Rate urgent (mg/dL per 5 min)', help: 'Number, e.g. 25' },
+]
+
 function SettingsTab() {
   const qc = useQueryClient()
   const settings = useQuery({ queryKey: ['admin', 'settings'], queryFn: api.admin.listSettings })
@@ -253,11 +266,20 @@ function SettingsTab() {
       <Stack direction="row" spacing={1.5}>
         <TextField
           size="small"
-          label="Key (e.g. units)"
+          select
+          label="Key"
           value={key}
           onChange={(e) => setKey(e.target.value)}
           sx={{ flex: 1 }}
-        />
+          helperText={KNOWN_KEYS.find((k) => k.key === key)?.help ?? 'Pick or type a key'}
+          slotProps={{ select: { native: false } }}
+        >
+          {KNOWN_KEYS.map((k) => (
+            <MenuItem key={k.key} value={k.key}>
+              {k.label}
+            </MenuItem>
+          ))}
+        </TextField>
         <TextField
           size="small"
           label='Value (JSON or string)'

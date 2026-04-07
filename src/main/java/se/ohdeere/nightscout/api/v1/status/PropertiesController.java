@@ -10,14 +10,18 @@ import se.ohdeere.nightscout.plugin.ar2.Ar2Plugin;
 import se.ohdeere.nightscout.plugin.bgnow.BgNowPlugin;
 import se.ohdeere.nightscout.plugin.cob.CobPlugin;
 import se.ohdeere.nightscout.plugin.iob.IobPlugin;
+import se.ohdeere.nightscout.plugin.pumploop.PumpLoopPlugin;
 import se.ohdeere.nightscout.service.admin.AdminService;
 import se.ohdeere.nightscout.storage.JsonValue;
+import se.ohdeere.nightscout.storage.alarm.AlarmHistoryEntry;
+import se.ohdeere.nightscout.storage.alarm.AlarmHistoryRepository;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -33,19 +37,32 @@ class PropertiesController {
 
 	private final ConsumableAgePlugin agePlugin;
 
+	private final PumpLoopPlugin pumpLoopPlugin;
+
 	private final AlarmEngine alarmEngine;
 
 	private final AdminService adminService;
 
+	private final AlarmHistoryRepository alarmHistory;
+
 	PropertiesController(BgNowPlugin bgNowPlugin, IobPlugin iobPlugin, CobPlugin cobPlugin, Ar2Plugin ar2Plugin,
-			ConsumableAgePlugin agePlugin, AlarmEngine alarmEngine, AdminService adminService) {
+			ConsumableAgePlugin agePlugin, PumpLoopPlugin pumpLoopPlugin, AlarmEngine alarmEngine,
+			AdminService adminService, AlarmHistoryRepository alarmHistory) {
 		this.bgNowPlugin = bgNowPlugin;
 		this.iobPlugin = iobPlugin;
 		this.cobPlugin = cobPlugin;
 		this.ar2Plugin = ar2Plugin;
 		this.agePlugin = agePlugin;
+		this.pumpLoopPlugin = pumpLoopPlugin;
 		this.alarmEngine = alarmEngine;
 		this.adminService = adminService;
+		this.alarmHistory = alarmHistory;
+	}
+
+	@GetMapping("/api/v1/alarms/history")
+	java.util.List<AlarmHistoryEntry> alarmHistory(@RequestParam(defaultValue = "50") int limit) {
+		AuthHelper.requirePermission("entries", "read");
+		return this.alarmHistory.findRecent(Math.min(limit, 500));
 	}
 
 	@GetMapping("/api/v1/properties")
@@ -61,6 +78,7 @@ class PropertiesController {
 		this.agePlugin.sage().ifPresent(r -> props.put("sage", r));
 		this.agePlugin.iage().ifPresent(r -> props.put("iage", r));
 		this.agePlugin.bage().ifPresent(r -> props.put("bage", r));
+		this.pumpLoopPlugin.calculate().ifPresent(r -> props.put("pump", r));
 
 		java.util.List<AlarmEngine.Alarm> active = this.alarmEngine.activeAlarms();
 		if (!active.isEmpty()) {

@@ -7,11 +7,13 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import se.ohdeere.nightscout.observability.NightscoutMetrics;
 import se.ohdeere.nightscout.service.entries.DataUpdateBroadcaster;
 import se.ohdeere.nightscout.service.entries.EntryService;
 import se.ohdeere.nightscout.storage.entries.Entry;
 import se.ohdeere.nightscout.storage.entries.EntryRepository;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
@@ -24,9 +26,13 @@ class EntryServiceImpl implements EntryService {
 
 	private final DataUpdateBroadcaster broadcaster;
 
-	EntryServiceImpl(EntryRepository entryRepository, DataUpdateBroadcaster broadcaster) {
+	private final ObjectProvider<NightscoutMetrics> metrics;
+
+	EntryServiceImpl(EntryRepository entryRepository, DataUpdateBroadcaster broadcaster,
+			ObjectProvider<NightscoutMetrics> metrics) {
 		this.entryRepository = entryRepository;
 		this.broadcaster = broadcaster;
+		this.metrics = metrics;
 	}
 
 	@Override
@@ -67,6 +73,10 @@ class EntryServiceImpl implements EntryService {
 		}
 		if (!saved.isEmpty()) {
 			this.broadcaster.broadcastNewEntries(saved);
+			NightscoutMetrics m = this.metrics.getIfAvailable();
+			if (m != null) {
+				m.recordEntryWritten(saved.size());
+			}
 		}
 		return saved;
 	}

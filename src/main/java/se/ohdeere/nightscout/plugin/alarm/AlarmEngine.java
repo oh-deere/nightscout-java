@@ -15,6 +15,8 @@ import se.ohdeere.nightscout.NightscoutProperties.Thresholds;
 import se.ohdeere.nightscout.plugin.PluginResult;
 import se.ohdeere.nightscout.plugin.ar2.Ar2Plugin;
 import se.ohdeere.nightscout.service.admin.EffectiveSettings;
+import se.ohdeere.nightscout.storage.alarm.AlarmHistoryEntry;
+import se.ohdeere.nightscout.storage.alarm.AlarmHistoryRepository;
 import se.ohdeere.nightscout.storage.alarm.AlarmSnooze;
 import se.ohdeere.nightscout.storage.alarm.AlarmSnoozeRepository;
 import se.ohdeere.nightscout.storage.entries.Entry;
@@ -50,19 +52,41 @@ public class AlarmEngine {
 
 	private final AlarmSnoozeRepository snoozes;
 
+	private final AlarmHistoryRepository history;
+
 	private volatile List<Alarm> currentAlarms = List.of();
 
 	public AlarmEngine(EntryRepository entryRepository, EffectiveSettings effective, Ar2Plugin ar2Plugin,
-			AlarmSnoozeRepository snoozes) {
+			AlarmSnoozeRepository snoozes, AlarmHistoryRepository history) {
 		this.entryRepository = entryRepository;
 		this.effective = effective;
 		this.ar2Plugin = ar2Plugin;
 		this.snoozes = snoozes;
+		this.history = history;
 	}
 
 	@Scheduled(fixedRate = 30000, initialDelay = 10000)
 	void evaluate() {
-		this.currentAlarms = computeAlarms();
+		List<Alarm> previous = this.currentAlarms;
+		List<Alarm> next = computeAlarms();
+		recordTransitions(previous, next);
+		this.currentAlarms = next;
+	}
+
+	private void recordTransitions(List<Alarm> previous, List<Alarm> next) {
+		for (Alarm alarm : next) {
+			boolean wasFiringAtSameLevel = previous.stream()
+				.anyMatch(p -> p.type().equals(alarm.type()) && p.level() == alarm.level());
+			if (!wasFiringAtSameLevel) {
+				try {
+					this.history.save(new AlarmHistoryEntry(null, Instant.now(), alarm.type(), alarm.level(),
+							alarm.title(), alarm.message()));
+				}
+				catch (Exception ex) {
+					LOG.warn("Failed to persist alarm history entry: {}", ex.getMessage());
+				}
+			}
+		}
 	}
 
 	/** Hourly cleanup of expired snooze rows. */
