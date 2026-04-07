@@ -41,6 +41,8 @@ export interface NightscoutSettings {
   alarmTypes: string[]
   authDefaultRoles: string
   nightMode: boolean
+  alarmTimeagoWarnMins?: number
+  alarmTimeagoUrgentMins?: number
 }
 
 export interface NightscoutStatus {
@@ -54,6 +56,20 @@ export interface NightscoutStatus {
   boluscalcEnabled: boolean
   runtimeState: string
   settings: NightscoutSettings
+}
+
+export interface Treatment {
+  _id: string
+  eventType: string
+  created_at: string
+  enteredBy?: string
+  notes?: string
+  insulin?: number
+  carbs?: number
+  glucose?: number
+  glucoseType?: string
+  duration?: number
+  utcOffset?: number
 }
 
 export interface PluginResult {

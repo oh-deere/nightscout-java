@@ -20,6 +20,14 @@ export function useEntries(hours = 6) {
   })
 }
 
+export function useTreatments(hours = 6) {
+  return useQuery({
+    queryKey: ['treatments', hours],
+    queryFn: () => api.treatmentsSince(new Date(Date.now() - hours * 3600_000).toISOString()),
+    refetchInterval: POLL_INTERVAL_MS,
+  })
+}
+
 export function useProperties() {
   return useQuery({
     queryKey: ['properties'],

@@ -3,14 +3,27 @@ import { Box, ButtonGroup, Button, Stack, Typography } from '@mui/material'
 import { CurrentBg } from './CurrentBg'
 import { BgChart } from './BgChart'
 import { PluginPills } from './PluginPills'
-import { useEntries, useProperties, useStatus } from '../hooks/useNightscoutData'
+import { TimeInRange } from './TimeInRange'
+import { SensorCard } from './SensorCard'
+import {
+  useEntries,
+  useProperties,
+  useStatus,
+  useTreatments,
+} from '../hooks/useNightscoutData'
+import { useAlarmNotifier } from '../hooks/useNotifications'
 
 const HOUR_OPTIONS = [3, 6, 12, 24] as const
 
-export function Dashboard() {
+interface Props {
+  notificationsEnabled: boolean
+}
+
+export function Dashboard({ notificationsEnabled }: Props) {
   const [hours, setHours] = useState<(typeof HOUR_OPTIONS)[number]>(6)
   const status = useStatus()
   const entries = useEntries(hours)
+  const treatments = useTreatments(hours)
   const properties = useProperties()
 
   const sortedEntries = useMemo(
@@ -21,6 +34,8 @@ export function Dashboard() {
   const current = sortedEntries[0] ?? null
   const previous = sortedEntries[1] ?? null
 
+  useAlarmNotifier(current, status.data?.settings, notificationsEnabled)
+
   if (!status.data) {
     return (
       <Box sx={{ textAlign: 'center', py: 8 }}>
@@ -30,9 +45,11 @@ export function Dashboard() {
   }
 
   return (
-    <Stack spacing={2} sx={{ p: 2, height: '100%' }}>
+    <Stack spacing={2} sx={{ p: 2 }}>
       <CurrentBg current={current} previous={previous} settings={status.data.settings} />
       <PluginPills properties={properties.data} />
+      <SensorCard properties={properties.data} />
+      <TimeInRange settings={status.data.settings} />
       <Stack direction="row" justifyContent="center">
         <ButtonGroup size="small" variant="outlined">
           {HOUR_OPTIONS.map((h) => (
@@ -46,8 +63,13 @@ export function Dashboard() {
           ))}
         </ButtonGroup>
       </Stack>
-      <Box sx={{ flex: 1, minHeight: 280 }}>
-        <BgChart entries={sortedEntries} settings={status.data.settings} hours={hours} />
+      <Box sx={{ height: { xs: 300, sm: 400 }, width: '100%' }}>
+        <BgChart
+          entries={sortedEntries}
+          treatments={treatments.data}
+          settings={status.data.settings}
+          hours={hours}
+        />
       </Box>
     </Stack>
   )

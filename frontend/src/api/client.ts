@@ -1,4 +1,9 @@
-import type { Entry, NightscoutStatus, PluginProperties } from '../types/nightscout'
+import type {
+  Entry,
+  NightscoutStatus,
+  PluginProperties,
+  Treatment,
+} from '../types/nightscout'
 
 const SECRET_KEY = 'nightscout.apiSecretHash'
 
@@ -43,8 +48,16 @@ export const api = {
   status: () => request<NightscoutStatus>('/api/v1/status.json'),
   entries: (count = 288) => request<Entry[]>(`/api/v1/entries.json?count=${count}`),
   entriesSince: (sinceMs: number) =>
-    request<Entry[]>(`/api/v1/entries.json?find[date][$gte]=${sinceMs}&count=1000`),
+    request<Entry[]>(
+      `/api/v1/entries.json?${encodeURIComponent('find[date][$gte]')}=${sinceMs}&count=1000`,
+    ),
   current: () => request<Entry[]>('/api/v1/entries/current.json'),
+  treatmentsSince: (sinceIso: string) =>
+    request<Treatment[]>(
+      `/api/v1/treatments.json?${encodeURIComponent('find[created_at][$gte]')}=${encodeURIComponent(
+        sinceIso,
+      )}&count=1000`,
+    ),
   properties: () => request<PluginProperties>('/api/v1/properties'),
   verifyAuth: () => request<{ message: string; status: number }>('/api/v1/verifyauth'),
 }

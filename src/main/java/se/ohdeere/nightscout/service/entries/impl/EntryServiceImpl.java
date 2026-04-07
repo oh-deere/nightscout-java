@@ -31,12 +31,12 @@ class EntryServiceImpl implements EntryService {
 
 	@Override
 	public List<Entry> findLatest(int count) {
-		return this.entryRepository.findLatest(Math.min(count, 1000));
+		return this.entryRepository.findLatest(Math.min(count, 10000));
 	}
 
 	@Override
 	public List<Entry> findLatestByType(String type, int count) {
-		return this.entryRepository.findLatestByType(type, Math.min(count, 1000));
+		return this.entryRepository.findLatestByType(type, Math.min(count, 10000));
 	}
 
 	@Override

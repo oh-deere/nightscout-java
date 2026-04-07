@@ -34,6 +34,8 @@ class StatusController {
 		settings.put("alarmTypes", List.of(this.properties.alarmTypes()));
 		settings.put("customTitle", this.properties.customTitle());
 		settings.put("authDefaultRoles", this.properties.authDefaultRoles());
+		settings.put("alarmTimeagoWarnMins", this.properties.alarmTimeagoWarnMins());
+		settings.put("alarmTimeagoUrgentMins", this.properties.alarmTimeagoUrgentMins());
 		settings.put("thresholds",
 				Map.of("bgHigh", this.properties.thresholds().bgHigh(), "bgTargetTop",
 						this.properties.thresholds().bgTargetTop(), "bgTargetBottom",
