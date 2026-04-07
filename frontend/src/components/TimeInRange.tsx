@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Box, ButtonGroup, Button, Card, Stack, Tooltip, Typography } from '@mui/material'
+import { useMemo } from 'react'
+import { Box, Card, Stack, Tooltip, Typography } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { NightscoutSettings } from '../types/nightscout'
@@ -11,12 +11,7 @@ import {
   toPercents,
 } from '../utils/tir'
 import { formatBg } from '../utils/units'
-
-const WINDOW_OPTIONS = [
-  { label: '24h', hours: 24 },
-  { label: '7d', hours: 7 * 24 },
-  { label: '14d', hours: 14 * 24 },
-] as const
+import { useViewSettings } from '../hooks/useViewSettings'
 
 interface Props {
   settings: NightscoutSettings
@@ -31,7 +26,8 @@ const COLORS = {
 }
 
 export function TimeInRange({ settings }: Props) {
-  const [hours, setHours] = useState<number>(24)
+  const view = useViewSettings()
+  const hours = view.tirHours
 
   const query = useQuery({
     queryKey: ['entries-tir', hours],
@@ -39,6 +35,8 @@ export function TimeInRange({ settings }: Props) {
     staleTime: 60_000,
     refetchInterval: 5 * 60_000,
   })
+
+  const windowLabel = hours === 24 ? '24h' : hours === 168 ? '7d' : `${Math.round(hours / 24)}d`
 
   const stats = useMemo(() => {
     const entries = query.data ?? []
@@ -57,27 +55,9 @@ export function TimeInRange({ settings }: Props) {
   return (
     <Card sx={{ p: 2 }}>
       <Stack spacing={1.5}>
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          flexWrap="wrap"
-        >
-          <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
-            Time in Range
-          </Typography>
-          <ButtonGroup size="small" variant="outlined">
-            {WINDOW_OPTIONS.map((w) => (
-              <Button
-                key={w.label}
-                variant={w.hours === hours ? 'contained' : 'outlined'}
-                onClick={() => setHours(w.hours)}
-              >
-                {w.label}
-              </Button>
-            ))}
-          </ButtonGroup>
-        </Stack>
+        <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
+          Time in Range · {windowLabel}
+        </Typography>
 
         {stats.buckets.total === 0 ? (
           <Typography color="text.secondary" variant="body2">

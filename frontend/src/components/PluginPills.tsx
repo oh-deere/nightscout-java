@@ -19,8 +19,7 @@ export function PluginPills({ properties }: Props) {
     pills.push({ label: p.label, value: p.value, color })
   }
 
-  addPlugin(properties.iob)
-  addPlugin(properties.cob)
+  // IOB and COB live in the BgHeader — only show ages here
   addPlugin(properties.cage)
   addPlugin(properties.sage)
   addPlugin(properties.iage)

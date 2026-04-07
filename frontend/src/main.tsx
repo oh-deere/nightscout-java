@@ -4,6 +4,7 @@ import { CssBaseline, ThemeProvider } from '@mui/material'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { theme } from './theme/theme'
 import { AppShell } from './components/AppShell'
+import { ViewSettingsProvider } from './hooks/useViewSettings'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,7 +20,9 @@ createRoot(document.getElementById('root')!).render(
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <QueryClientProvider client={queryClient}>
-        <AppShell />
+        <ViewSettingsProvider>
+          <AppShell />
+        </ViewSettingsProvider>
       </QueryClientProvider>
     </ThemeProvider>
   </StrictMode>,

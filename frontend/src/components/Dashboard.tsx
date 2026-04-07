@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
-import { Box, ButtonGroup, Button, Stack, Typography } from '@mui/material'
-import { CurrentBg } from './CurrentBg'
+import { useMemo } from 'react'
+import { Box, Stack, Typography } from '@mui/material'
+import { BgHeader } from './BgHeader'
 import { BgChart } from './BgChart'
 import { PluginPills } from './PluginPills'
 import { TimeInRange } from './TimeInRange'
@@ -12,18 +12,18 @@ import {
   useTreatments,
 } from '../hooks/useNightscoutData'
 import { useAlarmNotifier } from '../hooks/useNotifications'
-
-const HOUR_OPTIONS = [3, 6, 12, 24] as const
+import { useViewSettings } from '../hooks/useViewSettings'
+import { useEffectiveSettings } from '../hooks/useEffectiveSettings'
 
 interface Props {
   notificationsEnabled: boolean
 }
 
 export function Dashboard({ notificationsEnabled }: Props) {
-  const [hours, setHours] = useState<(typeof HOUR_OPTIONS)[number]>(6)
+  const view = useViewSettings()
   const status = useStatus()
-  const entries = useEntries(hours)
-  const treatments = useTreatments(hours)
+  const entries = useEntries(view.chartHours)
+  const treatments = useTreatments(view.chartHours)
   const properties = useProperties()
 
   const sortedEntries = useMemo(
@@ -34,7 +34,24 @@ export function Dashboard({ notificationsEnabled }: Props) {
   const current = sortedEntries[0] ?? null
   const previous = sortedEntries[1] ?? null
 
-  useAlarmNotifier(current, status.data?.settings, notificationsEnabled)
+  // Hooks must run unconditionally — pass an empty fallback when status is loading.
+  const effective = useEffectiveSettings(
+    status.data?.settings ?? {
+      units: 'mg/dl',
+      timeFormat: 24,
+      theme: 'default',
+      language: 'en',
+      customTitle: '',
+      showPlugins: '',
+      enable: [],
+      thresholds: { bgHigh: 260, bgTargetTop: 180, bgTargetBottom: 70, bgLow: 55 },
+      alarmTypes: [],
+      authDefaultRoles: 'denied',
+      nightMode: false,
+    },
+  )
+
+  useAlarmNotifier(current, effective, notificationsEnabled)
 
   if (!status.data) {
     return (
@@ -46,31 +63,25 @@ export function Dashboard({ notificationsEnabled }: Props) {
 
   return (
     <Stack spacing={2} sx={{ p: 2 }}>
-      <CurrentBg current={current} previous={previous} settings={status.data.settings} />
+      <BgHeader
+        current={current}
+        previous={previous}
+        settings={effective}
+        properties={properties.data}
+      />
       <PluginPills properties={properties.data} />
-      <SensorCard properties={properties.data} />
-      <TimeInRange settings={status.data.settings} />
-      <Stack direction="row" justifyContent="center">
-        <ButtonGroup size="small" variant="outlined">
-          {HOUR_OPTIONS.map((h) => (
-            <Button
-              key={h}
-              variant={h === hours ? 'contained' : 'outlined'}
-              onClick={() => setHours(h)}
-            >
-              {h}h
-            </Button>
-          ))}
-        </ButtonGroup>
-      </Stack>
-      <Box sx={{ height: { xs: 300, sm: 400 }, width: '100%' }}>
+      <Box sx={{ height: { xs: 360, sm: 520 }, width: '100%' }}>
         <BgChart
           entries={sortedEntries}
           treatments={treatments.data}
-          settings={status.data.settings}
-          hours={hours}
+          settings={effective}
+          hours={view.chartHours}
+          showLine={view.showLine}
+          smoothing={view.smoothing}
         />
       </Box>
+      <SensorCard properties={properties.data} />
+      <TimeInRange settings={effective} />
     </Stack>
   )
 }

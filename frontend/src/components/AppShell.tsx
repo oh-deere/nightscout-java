@@ -9,6 +9,7 @@ import { useStatus } from '../hooks/useNightscoutData'
 import { ApiError } from '../api/client'
 import { clearApiSecretHash, getApiSecretHash } from '../api/client'
 import { useNotifications } from '../hooks/useNotifications'
+import { SettingsMenu } from './SettingsMenu'
 
 export function AppShell() {
   const status = useStatus()
@@ -47,6 +48,7 @@ export function AppShell() {
               </IconButton>
             </Tooltip>
           )}
+          <SettingsMenu />
           <Tooltip title="Sign out">
             <IconButton
               color="inherit"
