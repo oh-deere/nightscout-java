@@ -1,11 +1,246 @@
 = Nightscout Java API
 :doctype: book
 :toc: left
-:toclevels: 2
+:toclevels: 3
+:sectanchors:
+:sectlinks:
 :source-highlighter: highlightjs
+:snippets: {snippets}
 
 == Overview
 
-Nightscout CGM server — Java 25 / Spring Boot 4 / PostgreSQL.
+Nightscout CGM server — Java 25 / Spring Boot 4 / PostgreSQL — implementing the upstream
+Nightscout v1, v2, and v3 REST API contracts plus full LoopKit/Loop, AAPS, and xDrip+
+client compatibility.
 
-API documentation generated from tests using Spring RestDocs.
+This document is generated from real Spring RestDocs tests against a running instance
+backed by Testcontainers PostgreSQL. Every snippet shows the actual request and response
+the service produced.
+
+== Authentication
+
+Two authentication methods are supported simultaneously. Either is sufficient.
+
+=== API secret (Nightscout-native)
+
+Set the `api-secret` HTTP header to the SHA-1 hash (lowercase hex) of the configured
+`API_SECRET` environment variable. This is what xDrip+, AAPS, Loop, and the legacy
+Nightscout web client use.
+
+[source,bash]
+----
+HASH=$(echo -n "Jq6RH1NjytCPjnV" | shasum -a 1 | cut -d' ' -f1)
+curl -H "api-secret: $HASH" https://nightscout.ohdeere.se/api/v1/entries.json
+----
+
+Alternatively, the access token may be passed as a query parameter:
+`?token=<sha1-hash>`.
+
+=== OAuth2 Bearer JWT (optional)
+
+When `OAUTH_ENABLED=true` is set in the deployment environment, the service also accepts
+JWTs issued by the configured OAuth2 issuer (`OAUTH_ISSUER_URI`, defaults to
+`https://auth.ohdeere.se`). Send the token in the `Authorization` header:
+
+[source,bash]
+----
+curl -H "Authorization: Bearer <jwt>" https://nightscout.ohdeere.se/api/v1/entries.json
+----
+
+JWT subjects map to Nightscout permissions through the `permissions` claim
+(shiro-style strings like `api:entries:read`) or the standard OAuth `scope` claim. A
+permission of `*:*:*` or `admin` grants full access.
+
+=== Token exchange
+
+Both auth methods can be exchanged for a short-lived JWT via:
+
+* `GET /api/v2/authorization/request/{accessToken}`
+* `GET /api/v3/authorization/request/{accessToken}` (alias)
+
+The path variable can be a SHA-1 api-secret hash, an access token, or an existing JWT.
+Returns `{token, sub, permissionGroups, iat, exp}`.
+
+include::{snippets}/v2-authorization-request/curl-request.adoc[]
+include::{snippets}/v2-authorization-request/http-response.adoc[]
+
+== Server status & meta
+
+=== `GET /api/versions`
+
+Returns the supported API versions.
+
+include::{snippets}/api-versions/http-request.adoc[]
+include::{snippets}/api-versions/http-response.adoc[]
+
+=== `GET /api/v1/status.json`
+
+Public endpoint. Returns server status, configured units, thresholds, enabled plugins,
+and the {{settings}} object that uploaders read on connection.
+
+include::{snippets}/v1-status/http-request.adoc[]
+include::{snippets}/v1-status/http-response.adoc[]
+
+=== `GET /api/v1/verifyauth`
+
+Echoes back the resolved subject and its permissions when valid credentials are presented.
+
+include::{snippets}/v1-verifyauth/curl-request.adoc[]
+include::{snippets}/v1-verifyauth/http-response.adoc[]
+
+=== `GET /api/v1/experiments/test`
+
+200/auth probe used by Loop before doing any real work.
+
+include::{snippets}/v1-experiments-test/curl-request.adoc[]
+include::{snippets}/v1-experiments-test/http-response.adoc[]
+
+=== `GET /api/v3/version`, `GET /api/v3/status`, `GET /api/v3/lastModified`
+
+Public version + status; `lastModified` returns per-collection timestamps for
+incremental sync clients (AAPS, etc.).
+
+include::{snippets}/v3-version/http-request.adoc[]
+include::{snippets}/v3-version/http-response.adoc[]
+
+include::{snippets}/v3-status/http-request.adoc[]
+include::{snippets}/v3-status/http-response.adoc[]
+
+include::{snippets}/v3-lastmodified/curl-request.adoc[]
+include::{snippets}/v3-lastmodified/http-response.adoc[]
+
+== Entries (CGM readings)
+
+The highest-volume collection. Stores SGV, MBG, and calibration entries. Uploaders
+deduplicate via `(sysTime, type)`.
+
+=== `POST /api/v1/entries`
+
+Accepts a single entry or an array. Returns the inserted records with server-assigned
+`_id`, in the same order as the request, with HTTP 200.
+
+include::{snippets}/v1-entries-post/curl-request.adoc[]
+include::{snippets}/v1-entries-post/http-request.adoc[]
+include::{snippets}/v1-entries-post/http-response.adoc[]
+
+=== `GET /api/v1/entries.json`
+
+List entries with optional filtering. Supports `count`, `find[type]`,
+`find[date][$gte|$lte]`, and `find[dateString][$gte|$lte]`.
+
+include::{snippets}/v1-entries-list/curl-request.adoc[]
+include::{snippets}/v1-entries-list/http-response.adoc[]
+
+=== `GET /api/v1/entries/current.json`
+
+The most recent SGV entry, returned as a single-element array.
+
+include::{snippets}/v1-entries-current/curl-request.adoc[]
+include::{snippets}/v1-entries-current/http-response.adoc[]
+
+=== `GET /api/v1/entries/sgv.json`
+
+Most recent SGV entries, default 10.
+
+include::{snippets}/v1-entries-sgv/curl-request.adoc[]
+include::{snippets}/v1-entries-sgv/http-response.adoc[]
+
+=== `GET /api/v3/entries`
+
+v3 listing with `identifier`, `srvModified`, and `isValid` fields. Used by clients that
+want incremental sync via `/api/v3/entries/history/{lastModified}`.
+
+include::{snippets}/v3-entries-list/curl-request.adoc[]
+include::{snippets}/v3-entries-list/http-response.adoc[]
+
+== Treatments
+
+Insulin doses, carb entries, temp basals, profile switches, site changes, and 25+ other
+event types.
+
+=== `POST /api/v1/treatments`
+
+Accepts a single treatment or an array. Returns the inserted records with `_id`. The
+optional `syncIdentifier` and `insulinType` fields are persisted and round-tripped
+verbatim — required for Loop client reconciliation.
+
+include::{snippets}/v1-treatments-post/curl-request.adoc[]
+include::{snippets}/v1-treatments-post/http-request.adoc[]
+include::{snippets}/v1-treatments-post/http-response.adoc[]
+
+=== `GET /api/v1/treatments.json`
+
+Filter via `count`, `find[eventType]`, `find[created_at][$gte|$lte]`. Default 10 most
+recent.
+
+include::{snippets}/v1-treatments-list/curl-request.adoc[]
+include::{snippets}/v1-treatments-list/http-response.adoc[]
+
+=== `GET /api/v3/treatments`
+
+v3 generic CRUD endpoint with full PUT/PATCH/DELETE support and a
+`/history/{lastModified}` route for incremental sync.
+
+include::{snippets}/v3-treatments-list/curl-request.adoc[]
+include::{snippets}/v3-treatments-list/http-response.adoc[]
+
+== Profiles
+
+Basal rates, ISF, IC ratios, target ranges. AAPS and Loop both read profiles via these
+endpoints to know how to act on insulin/carb decisions.
+
+=== `POST /api/v1/profile`
+
+include::{snippets}/v1-profile-post/curl-request.adoc[]
+include::{snippets}/v1-profile-post/http-request.adoc[]
+include::{snippets}/v1-profile-post/http-response.adoc[]
+
+=== `GET /api/v1/profile/current`
+
+Returns the most recent profile as a single object (not an array). Used by AAPS.
+
+include::{snippets}/v1-profile-current/curl-request.adoc[]
+include::{snippets}/v1-profile-current/http-response.adoc[]
+
+== Device status
+
+Pump, loop, OpenAPS, AAPS, and uploader status reports. Highly variable structure — the
+full payload is stored as `jsonb` with a few indexed columns extracted.
+
+=== `POST /api/v1/devicestatus`
+
+include::{snippets}/v1-devicestatus-post/curl-request.adoc[]
+include::{snippets}/v1-devicestatus-post/http-request.adoc[]
+include::{snippets}/v1-devicestatus-post/http-response.adoc[]
+
+== Activity
+
+Exercise / activity tracking.
+
+=== `POST /api/v1/activity`
+
+include::{snippets}/v1-activity-post/curl-request.adoc[]
+include::{snippets}/v1-activity-post/http-request.adoc[]
+include::{snippets}/v1-activity-post/http-response.adoc[]
+
+== Plugin properties
+
+Combined plugin output for the dashboard: BG now, IOB, COB, AR2 forecast, consumable
+ages (CAGE/SAGE/IAGE/BAGE), and the current alarm.
+
+=== `GET /api/v1/properties`
+
+include::{snippets}/v1-properties/curl-request.adoc[]
+include::{snippets}/v1-properties/http-response.adoc[]
+
+== Loop notifications (remote commands)
+
+Loop's remote-command channel: temporary override start/cancel, remote bolus, remote
+carb entries. The request is persisted as a treatment so it shows up in the standard
+treatment log.
+
+=== `POST /api/v2/notifications/loop`
+
+include::{snippets}/v2-notifications-loop/curl-request.adoc[]
+include::{snippets}/v2-notifications-loop/http-request.adoc[]
+include::{snippets}/v2-notifications-loop/http-response.adoc[]
