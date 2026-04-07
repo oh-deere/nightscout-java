@@ -55,6 +55,14 @@ public class EffectiveSettings {
 		return integer("alarmTimeagoUrgentMins").orElse(this.properties.alarmTimeagoUrgentMins());
 	}
 
+	public int deltaWarnMgdl() {
+		return integer("delta.warn").orElse(15);
+	}
+
+	public int deltaUrgentMgdl() {
+		return integer("delta.urgent").orElse(25);
+	}
+
 	public Thresholds thresholds() {
 		Thresholds defaults = this.properties.thresholds();
 		return new Thresholds(integer("thresholds.bgHigh").orElse(defaults.bgHigh()),

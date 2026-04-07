@@ -5,6 +5,7 @@ import { BgChart } from './BgChart'
 import { PluginPills } from './PluginPills'
 import { TimeInRange } from './TimeInRange'
 import { SensorCard } from './SensorCard'
+import { AlarmBanner } from './AlarmBanner'
 import {
   useEntries,
   useProperties,
@@ -63,6 +64,7 @@ export function Dashboard({ notificationsEnabled }: Props) {
 
   return (
     <Stack spacing={2} sx={{ p: 2 }}>
+      <AlarmBanner properties={properties.data} />
       <BgHeader
         current={current}
         previous={previous}

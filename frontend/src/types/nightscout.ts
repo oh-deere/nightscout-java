@@ -89,5 +89,14 @@ export interface PluginProperties {
   sage?: PluginResult
   iage?: PluginResult
   bage?: PluginResult
-  alarm?: { level: number; title: string; message: string; type: string }
+  alarm?: AlarmInfo
+  alarms?: AlarmInfo[]
+  snoozes?: Record<string, string>
+}
+
+export interface AlarmInfo {
+  level: number
+  title: string
+  message: string
+  type: string
 }

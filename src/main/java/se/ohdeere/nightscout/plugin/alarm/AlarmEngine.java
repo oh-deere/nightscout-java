@@ -3,20 +3,40 @@ package se.ohdeere.nightscout.plugin.alarm;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import se.ohdeere.nightscout.NightscoutProperties.Thresholds;
+import se.ohdeere.nightscout.plugin.PluginResult;
+import se.ohdeere.nightscout.plugin.ar2.Ar2Plugin;
 import se.ohdeere.nightscout.service.admin.EffectiveSettings;
+import se.ohdeere.nightscout.storage.alarm.AlarmSnooze;
+import se.ohdeere.nightscout.storage.alarm.AlarmSnoozeRepository;
 import se.ohdeere.nightscout.storage.entries.Entry;
 import se.ohdeere.nightscout.storage.entries.EntryRepository;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+/**
+ * Multi-alarm engine. Each evaluation cycle inspects current SGV, the 5-minute delta, and
+ * the AR2 forecast to produce zero or more alarms.
+ *
+ * <p>
+ * Alarm types currently emitted:
+ * <ul>
+ * <li>{@code timeago} — stale data (warn / urgent based on age)</li>
+ * <li>{@code high} / {@code low} — current SGV outside target/urgent thresholds</li>
+ * <li>{@code rise} / {@code fall} — rapid rate of change (warn ≥15 mg/dL/5min, urgent ≥25
+ * mg/dL/5min)</li>
+ * <li>{@code predicted} — AR2 forecast crosses threshold within 30 minutes</li>
+ * </ul>
+ */
 @Component
 public class AlarmEngine {
 
@@ -26,87 +46,158 @@ public class AlarmEngine {
 
 	private final EffectiveSettings effective;
 
-	private final Map<String, Instant> snoozedAlarms = new ConcurrentHashMap<>();
+	private final Ar2Plugin ar2Plugin;
 
-	private volatile Alarm currentAlarm;
+	private final AlarmSnoozeRepository snoozes;
 
-	public AlarmEngine(EntryRepository entryRepository, EffectiveSettings effective) {
+	private volatile List<Alarm> currentAlarms = List.of();
+
+	public AlarmEngine(EntryRepository entryRepository, EffectiveSettings effective, Ar2Plugin ar2Plugin,
+			AlarmSnoozeRepository snoozes) {
 		this.entryRepository = entryRepository;
 		this.effective = effective;
+		this.ar2Plugin = ar2Plugin;
+		this.snoozes = snoozes;
 	}
 
 	@Scheduled(fixedRate = 30000, initialDelay = 10000)
 	void evaluate() {
+		this.currentAlarms = computeAlarms();
+	}
+
+	/** Hourly cleanup of expired snooze rows. */
+	@Scheduled(fixedRate = 3600000, initialDelay = 60000)
+	void cleanupSnoozes() {
+		int deleted = this.snoozes.deleteExpired(Instant.now());
+		if (deleted > 0) {
+			LOG.debug("Cleaned up {} expired snooze rows", deleted);
+		}
+	}
+
+	List<Alarm> computeAlarms() {
 		Entry current = this.entryRepository.findCurrentByType("sgv");
 		if (current == null || current.sgv() == null) {
-			this.currentAlarm = null;
-			return;
+			return List.of();
 		}
 
+		List<Alarm> alarms = new ArrayList<>();
 		int sgv = current.sgv();
 		long ageMins = Duration.ofMillis(System.currentTimeMillis() - current.dateMs()).toMinutes();
 
-		// Stale data alarm
+		// Stale data: short-circuits everything else, since SGV is unreliable.
 		if (ageMins > this.effective.alarmTimeagoUrgentMins()) {
-			setAlarm(new Alarm(3, "Urgent Stale Data", "No data for " + ageMins + " minutes", "timeago"));
-			return;
+			alarms.add(new Alarm(3, "Urgent Stale Data", "No data for " + ageMins + " minutes", "timeago"));
+			return alarms;
 		}
 		if (ageMins > this.effective.alarmTimeagoWarnMins()) {
-			setAlarm(new Alarm(2, "Stale Data", "No data for " + ageMins + " minutes", "timeago"));
-			return;
+			alarms.add(new Alarm(2, "Stale Data", "No data for " + ageMins + " minutes", "timeago"));
+			return alarms;
 		}
 
-		// BG alarms
 		Thresholds t = this.effective.thresholds();
+
+		// Current BG alarms
 		if (sgv > t.bgHigh()) {
-			setAlarm(new Alarm(3, "Urgent High", formatBg(sgv), "high"));
+			alarms.add(new Alarm(3, "Urgent High", formatBg(sgv), "high"));
 		}
 		else if (sgv < t.bgLow()) {
-			setAlarm(new Alarm(3, "Urgent Low", formatBg(sgv), "low"));
+			alarms.add(new Alarm(3, "Urgent Low", formatBg(sgv), "low"));
 		}
 		else if (sgv > t.bgTargetTop()) {
-			setAlarm(new Alarm(2, "High", formatBg(sgv), "high"));
+			alarms.add(new Alarm(2, "High", formatBg(sgv), "high"));
 		}
 		else if (sgv < t.bgTargetBottom()) {
-			setAlarm(new Alarm(2, "Low", formatBg(sgv), "low"));
+			alarms.add(new Alarm(2, "Low", formatBg(sgv), "low"));
 		}
-		else {
-			this.currentAlarm = null;
+
+		// Delta / rate alarms (need a previous reading within ~10 min)
+		int deltaWarn = this.effective.deltaWarnMgdl();
+		int deltaUrgent = this.effective.deltaUrgentMgdl();
+		List<Entry> recent = this.entryRepository.findLatestByType("sgv", 2);
+		if (recent.size() == 2 && recent.get(1).sgv() != null) {
+			long dtMins = Duration.ofMillis(recent.get(0).dateMs() - recent.get(1).dateMs()).toMinutes();
+			if (dtMins > 0 && dtMins <= 10) {
+				int delta = recent.get(0).sgv() - recent.get(1).sgv();
+				if (delta >= deltaUrgent) {
+					alarms.add(new Alarm(3, "Rapid Rise", "+" + delta + " mg/dL", "rise"));
+				}
+				else if (delta >= deltaWarn) {
+					alarms.add(new Alarm(2, "Rising Fast", "+" + delta + " mg/dL", "rise"));
+				}
+				else if (delta <= -deltaUrgent) {
+					alarms.add(new Alarm(3, "Rapid Fall", delta + " mg/dL", "fall"));
+				}
+				else if (delta <= -deltaWarn) {
+					alarms.add(new Alarm(2, "Falling Fast", delta + " mg/dL", "fall"));
+				}
+			}
 		}
+
+		// Predictive alarm via AR2
+		Optional<PluginResult> ar2 = this.ar2Plugin.calculate();
+		ar2.ifPresent(result -> {
+			Object level = result.data() != null ? result.data().get("level") : null;
+			if ("urgent".equals(level)) {
+				alarms.add(new Alarm(3, "Predicted Urgent", "AR2 forecast crosses threshold", "predicted"));
+			}
+			else if ("warn".equals(level)) {
+				alarms.add(new Alarm(2, "Predicted", "AR2 forecast trends out of range", "predicted"));
+			}
+		});
+
+		alarms.sort(Comparator.comparingInt(Alarm::level).reversed());
+		return alarms;
 	}
 
+	/**
+	 * Highest-level non-snoozed alarm. Returns {@code null} when nothing is firing —
+	 * preserves the legacy single-alarm API used by {@code /api/v1/properties}.
+	 */
 	public Alarm currentAlarm() {
-		if (this.currentAlarm != null && isSnoozed(this.currentAlarm.type())) {
-			return null;
+		return activeAlarms().stream().findFirst().orElse(null);
+	}
+
+	/** All currently active (non-snoozed) alarms, highest level first. */
+	public List<Alarm> activeAlarms() {
+		List<Alarm> snapshot = this.currentAlarms;
+		if (snapshot.isEmpty()) {
+			return List.of();
 		}
-		return this.currentAlarm;
+		Map<String, Instant> active = activeSnoozes();
+		List<Alarm> visible = new ArrayList<>();
+		for (Alarm alarm : snapshot) {
+			if (!active.containsKey(alarm.type())) {
+				visible.add(alarm);
+			}
+		}
+		return visible;
 	}
 
 	public List<Alarm> alarmHistory() {
-		Alarm current = currentAlarm();
-		return (current != null) ? List.of(current) : List.of();
+		return activeAlarms();
 	}
 
 	public void snooze(String type, int minutes) {
-		this.snoozedAlarms.put(type, Instant.now().plus(Duration.ofMinutes(minutes)));
-		LOG.info("Snoozed alarm type '{}' for {} minutes", type, minutes);
+		snooze(type, minutes, "system");
 	}
 
-	private boolean isSnoozed(String type) {
-		Instant until = this.snoozedAlarms.get(type);
-		if (until != null && Instant.now().isBefore(until)) {
-			return true;
-		}
-		this.snoozedAlarms.remove(type);
-		return false;
+	public void snooze(String type, int minutes, String actor) {
+		Instant now = Instant.now();
+		this.snoozes.upsert(type, now.plus(Duration.ofMinutes(minutes)), actor, now);
+		LOG.info("Snoozed alarm type '{}' for {} minutes by {}", type, minutes, actor);
 	}
 
-	private void setAlarm(Alarm alarm) {
-		if (this.currentAlarm == null || this.currentAlarm.level() != alarm.level()
-				|| !this.currentAlarm.type().equals(alarm.type())) {
-			LOG.debug("Alarm: level={} title={}", alarm.level(), alarm.title());
+	public void clearSnooze(String type) {
+		this.snoozes.deleteById(type);
+		LOG.info("Cleared snooze for alarm type '{}'", type);
+	}
+
+	public Map<String, Instant> activeSnoozes() {
+		Map<String, Instant> result = new HashMap<>();
+		for (AlarmSnooze snooze : this.snoozes.findActive(Instant.now())) {
+			result.put(snooze.type(), snooze.snoozedUntil());
 		}
-		this.currentAlarm = alarm;
+		return result;
 	}
 
 	private String formatBg(int mgdl) {
