@@ -9,7 +9,6 @@ import java.util.concurrent.TimeUnit;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import se.ohdeere.nightscout.NightscoutProperties;
 import se.ohdeere.nightscout.storage.entries.Entry;
 import se.ohdeere.nightscout.storage.entries.EntryRepository;
 import tools.jackson.databind.ObjectMapper;
@@ -21,9 +20,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Minimal Socket.IO/Engine.IO server for Nightscout client data delivery. Engine.IO
- * packets: 0=open, 2=ping, 3=pong, 4=message. Socket.IO on top: 40=connect, 42=event,
- * 43=ack.
+ * Minimal Socket.IO/Engine.IO server for the Nightscout client. Implements the polling
+ * transport with namespace connect, authorize event with permissions ack, and dataUpdate
+ * events.
+ *
+ * Engine.IO: 0=open, 2=ping, 3=pong, 4=message Socket.IO (in messages): 0=connect,
+ * 2=event, 3=ack
  */
 @RestController
 class SocketIoStubController {
@@ -38,8 +40,6 @@ class SocketIoStubController {
 
 	private final ObjectMapper objectMapper;
 
-	private volatile boolean connected = false;
-
 	SocketIoStubController(EntryRepository entryRepository, ObjectMapper objectMapper) {
 		this.entryRepository = entryRepository;
 		this.objectMapper = objectMapper;
@@ -48,26 +48,11 @@ class SocketIoStubController {
 	@GetMapping({ "/socket.io", "/socket.io/" })
 	Object poll(@RequestParam(value = "sid", required = false) String sid) {
 		if (sid == null) {
-			this.connected = false;
+			LOG.debug("Socket.IO GET: handshake");
 			this.outQueue.clear();
-			LOG.debug("Socket.IO GET: handshake (new connection)");
 			return ok(HANDSHAKE);
 		}
 
-		if (!this.connected) {
-			this.connected = true;
-			LOG.debug("Socket.IO GET: namespace connect");
-			// Namespace connect — but also check if there's queued data to batch
-			String queued = this.outQueue.poll();
-			if (queued != null) {
-				// Send both namespace connect and data in one response
-				LOG.debug("Socket.IO GET: namespace connect + queued data ({} chars)", queued.length());
-				return ok("40{\"sid\":\"ns-stub\"}\u001e" + queued);
-			}
-			return ok("40{\"sid\":\"ns-stub\"}");
-		}
-
-		LOG.debug("Socket.IO GET: long-poll start (queue size={})", this.outQueue.size());
 		try {
 			String msg = this.outQueue.poll(25, TimeUnit.SECONDS);
 			if (msg != null) {
@@ -78,7 +63,7 @@ class SocketIoStubController {
 		catch (InterruptedException ex) {
 			Thread.currentThread().interrupt();
 		}
-		LOG.debug("Socket.IO GET: timeout, returning ping");
+		LOG.debug("Socket.IO GET: timeout, sending ping");
 		return ok("2");
 	}
 
@@ -86,31 +71,51 @@ class SocketIoStubController {
 	ResponseEntity<String> post(HttpServletRequest request) {
 		try {
 			String body = new String(request.getInputStream().readAllBytes());
-			LOG.debug("Socket.IO POST: {}", body.length() > 200 ? body.substring(0, 200) : body);
-
-			if (body.contains("authorize")) {
-				handleAuthorize(body);
-			}
+			LOG.debug("Socket.IO POST: {}", body.length() > 200 ? body.substring(0, 200) + "..." : body);
+			handleClientMessage(body);
 		}
 		catch (Exception ex) {
-			LOG.debug("Socket.IO POST read error", ex);
+			LOG.warn("Socket.IO POST handler error", ex);
 		}
 		return ResponseEntity.ok("ok");
 	}
 
-	public void queueDataUpdate(List<Entry> entries) {
-		Map<String, Object> data = buildDataPayload(entries);
-		String json = this.objectMapper.writeValueAsString(List.of("dataUpdate", data));
-		this.outQueue.offer("42" + json);
-	}
-
-	private void handleAuthorize(String body) {
-		String payload = body;
-		// Strip Engine.IO message prefix if present
-		if (payload.startsWith("4")) {
-			payload = payload.substring(2);
+	private void handleClientMessage(String body) {
+		if (body == null || body.isEmpty()) {
+			return;
 		}
 
+		// Engine.IO ping/pong
+		if (body.equals("3") || body.equals("2")) {
+			this.outQueue.offer("3");
+			return;
+		}
+
+		// Socket.IO namespace connect: "40" or "40/alarm,"
+		if (body.startsWith("40")) {
+			String ns = body.substring(2);
+			if (ns.isEmpty()) {
+				// Default namespace
+				this.outQueue.offer("40{\"sid\":\"main-stub\"}");
+				LOG.info("Socket.IO: connected to default namespace");
+			}
+			else {
+				// Custom namespace like /alarm,
+				String nsName = ns.endsWith(",") ? ns.substring(0, ns.length() - 1) : ns;
+				this.outQueue.offer("40" + nsName + ",{\"sid\":\"" + nsName.replace("/", "") + "-stub\"}");
+				LOG.info("Socket.IO: connected to namespace {}", nsName);
+			}
+			return;
+		}
+
+		// Socket.IO event: 42["event",...] or 42N["event",...] (with ack id)
+		if (body.startsWith("42")) {
+			handleEvent(body.substring(2));
+			return;
+		}
+	}
+
+	private void handleEvent(String payload) {
 		// Extract ack ID (digits before the JSON array)
 		StringBuilder ackId = new StringBuilder();
 		int idx = 0;
@@ -118,27 +123,32 @@ class SocketIoStubController {
 			ackId.append(payload.charAt(idx));
 			idx++;
 		}
+		String json = payload.substring(idx);
 
-		Map<String, Object> data = buildDataPayload(null);
-		LOG.info("Socket.IO: authorize response with {} sgvs (ackId={})", ((List<?>) data.get("sgvs")).size(), ackId);
-
-		if (ackId.length() > 0) {
-			String response = this.objectMapper.writeValueAsString(java.util.Arrays.asList(null, data));
-			String msg = "43" + ackId + response;
-			boolean ok = this.outQueue.offer(msg);
-			LOG.info("Socket.IO: queued ack ({} chars, ok={}, queueSize={})", msg.length(), ok, this.outQueue.size());
-		}
-		else {
-			String response = this.objectMapper.writeValueAsString(List.of("dataUpdate", data));
-			boolean ok = this.outQueue.offer("42" + response);
-			LOG.info("Socket.IO: queued event ({} chars, ok={}, queueSize={})", response.length(), ok,
-					this.outQueue.size());
+		if (json.contains("\"authorize\"")) {
+			handleAuthorize(ackId.toString());
 		}
 	}
 
-	private Map<String, Object> buildDataPayload(List<Entry> newEntries) {
-		List<Entry> recent = (newEntries != null && !newEntries.isEmpty()) ? newEntries
-				: this.entryRepository.findLatest(288);
+	private void handleAuthorize(String ackId) {
+		// 1. Send ack with full permissions
+		Map<String, Object> permissions = Map.of("read", true, "write", true, "write_treatment", true);
+		String ackJson = this.objectMapper.writeValueAsString(List.of(permissions));
+		String ackMsg = "43" + ackId + ackJson;
+		this.outQueue.offer(ackMsg);
+		LOG.info("Socket.IO: queued authorize ack ({} chars)", ackMsg.length());
+
+		// 2. Send dataUpdate event with the actual data
+		Map<String, Object> data = buildDataPayload();
+		String dataJson = this.objectMapper.writeValueAsString(java.util.Arrays.asList("dataUpdate", data));
+		String dataMsg = "42" + dataJson;
+		this.outQueue.offer(dataMsg);
+		LOG.info("Socket.IO: queued dataUpdate ({} chars, {} sgvs)", dataMsg.length(),
+				((List<?>) data.get("sgvs")).size());
+	}
+
+	private Map<String, Object> buildDataPayload() {
+		List<Entry> recent = this.entryRepository.findLatest(288);
 
 		List<Map<String, Object>> sgvs = recent.stream()
 			.filter(e -> "sgv".equals(e.type()))
