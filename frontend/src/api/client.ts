@@ -33,7 +33,51 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     }
     throw new ApiError(`HTTP ${res.status}`, res.status)
   }
+  if (res.status === 204) {
+    return undefined as T
+  }
   return res.json() as Promise<T>
+}
+
+async function requestJson<T>(path: string, method: string, body?: unknown): Promise<T> {
+  return request<T>(path, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  })
+}
+
+export interface AdminApiKey {
+  id: string
+  name: string
+  scope: 'read' | 'write' | 'admin'
+  createdAt: string
+  createdBy: string
+  lastUsedAt: string | null
+  expiresAt: string | null
+  enabled: boolean
+}
+
+export interface AdminApiKeyCreated extends AdminApiKey {
+  token: string
+}
+
+export interface AdminSetting {
+  key: string
+  value: string | null
+  updatedAt: string
+  updatedBy: string
+}
+
+export interface AdminAuditEntry {
+  id: string
+  occurredAt: string
+  actorSubject: string
+  actorKind: string
+  action: string
+  target: string
+  beforeValue: { value: string } | null
+  afterValue: { value: string } | null
 }
 
 export class ApiError extends Error {
@@ -59,5 +103,27 @@ export const api = {
       )}&count=1000`,
     ),
   properties: () => request<PluginProperties>('/api/v1/properties'),
-  verifyAuth: () => request<{ message: string; status: number }>('/api/v1/verifyauth'),
+  verifyAuth: () =>
+    request<{
+      message: string
+      status: number
+      sub?: string
+      permissions?: string[]
+      admin?: boolean
+    }>('/api/v1/verifyauth'),
+
+  admin: {
+    listKeys: () => request<AdminApiKey[]>('/api/v2/admin/keys'),
+    createKey: (name: string, scope: AdminApiKey['scope'], expiresAt?: string) =>
+      requestJson<AdminApiKeyCreated>('/api/v2/admin/keys', 'POST', { name, scope, expiresAt }),
+    revokeKey: (id: string) => requestJson<void>(`/api/v2/admin/keys/${id}`, 'DELETE'),
+
+    listSettings: () => request<AdminSetting[]>('/api/v2/admin/settings'),
+    putSetting: (key: string, value: unknown) =>
+      requestJson<AdminSetting>(`/api/v2/admin/settings/${encodeURIComponent(key)}`, 'PUT', value),
+    deleteSetting: (key: string) =>
+      requestJson<void>(`/api/v2/admin/settings/${encodeURIComponent(key)}`, 'DELETE'),
+
+    audit: (limit = 100) => request<AdminAuditEntry[]>(`/api/v2/admin/audit?limit=${limit}`),
+  },
 }

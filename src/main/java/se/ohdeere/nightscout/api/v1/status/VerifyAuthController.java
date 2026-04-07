@@ -17,7 +17,8 @@ class VerifyAuthController {
 		if (auth == NightscoutAuth.ANONYMOUS) {
 			return Map.of("message", "UNAUTHORIZED", "status", 401);
 		}
-		return Map.of("message", "OK", "status", 200, "sub", auth.subject(), "permissions", auth.permissions());
+		return Map.of("message", "OK", "status", 200, "sub", auth.subject(), "permissions", auth.permissions(), "admin",
+				auth.admin());
 	}
 
 }

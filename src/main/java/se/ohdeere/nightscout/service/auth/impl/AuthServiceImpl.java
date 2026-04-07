@@ -15,9 +15,11 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import se.ohdeere.nightscout.NightscoutProperties;
+import se.ohdeere.nightscout.service.admin.AdminService;
 import se.ohdeere.nightscout.service.auth.AuthService;
 import se.ohdeere.nightscout.service.auth.NightscoutAuth;
 
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -27,7 +29,10 @@ class AuthServiceImpl implements AuthService {
 
 	private final SecretKey jwtKey;
 
-	AuthServiceImpl(NightscoutProperties properties) {
+	private final AdminService adminService;
+
+	AuthServiceImpl(NightscoutProperties properties, @Lazy AdminService adminService) {
+		this.adminService = adminService;
 		String secret = properties.apiSecret();
 		this.apiSecretHash = (secret != null && !secret.isBlank()) ? sha1(secret) : "";
 		// Use API_SECRET as JWT signing key (same as upstream Nightscout)
@@ -64,9 +69,14 @@ class AuthServiceImpl implements AuthService {
 			return Optional.empty();
 		}
 
-		// 3. Check JWT token (from ?token= or Authorization: Bearer)
+		// 3. Check token (from ?token= or Authorization: Bearer):
+		// try api-key lookup first, then JWT.
 		String token = bearerToken;
 		if (token != null && !token.isBlank()) {
+			Optional<NightscoutAuth> apiKey = this.adminService.resolveToken(token);
+			if (apiKey.isPresent()) {
+				return apiKey;
+			}
 			return parseJwt(token);
 		}
 

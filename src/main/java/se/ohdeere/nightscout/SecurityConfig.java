@@ -52,6 +52,9 @@ class SecurityConfig {
 				// MCP endpoints (Spring AI starter)
 				.requestMatchers("/sse", "/mcp/**")
 				.permitAll()
+				// Admin endpoints require ROLE_ADMIN
+				.requestMatchers("/api/v2/admin/**")
+				.hasRole("ADMIN")
 				// Read endpoints require authentication
 				.requestMatchers(HttpMethod.GET, "/api/v1/**")
 				.authenticated()

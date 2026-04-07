@@ -9,7 +9,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import se.ohdeere.nightscout.NightscoutProperties;
+import se.ohdeere.nightscout.NightscoutProperties.Thresholds;
+import se.ohdeere.nightscout.service.admin.EffectiveSettings;
 import se.ohdeere.nightscout.storage.entries.Entry;
 import se.ohdeere.nightscout.storage.entries.EntryRepository;
 
@@ -23,15 +24,15 @@ public class AlarmEngine {
 
 	private final EntryRepository entryRepository;
 
-	private final NightscoutProperties properties;
+	private final EffectiveSettings effective;
 
 	private final Map<String, Instant> snoozedAlarms = new ConcurrentHashMap<>();
 
 	private volatile Alarm currentAlarm;
 
-	public AlarmEngine(EntryRepository entryRepository, NightscoutProperties properties) {
+	public AlarmEngine(EntryRepository entryRepository, EffectiveSettings effective) {
 		this.entryRepository = entryRepository;
-		this.properties = properties;
+		this.effective = effective;
 	}
 
 	@Scheduled(fixedRate = 30000, initialDelay = 10000)
@@ -46,26 +47,27 @@ public class AlarmEngine {
 		long ageMins = Duration.ofMillis(System.currentTimeMillis() - current.dateMs()).toMinutes();
 
 		// Stale data alarm
-		if (ageMins > this.properties.alarmTimeagoUrgentMins()) {
+		if (ageMins > this.effective.alarmTimeagoUrgentMins()) {
 			setAlarm(new Alarm(3, "Urgent Stale Data", "No data for " + ageMins + " minutes", "timeago"));
 			return;
 		}
-		if (ageMins > this.properties.alarmTimeagoWarnMins()) {
+		if (ageMins > this.effective.alarmTimeagoWarnMins()) {
 			setAlarm(new Alarm(2, "Stale Data", "No data for " + ageMins + " minutes", "timeago"));
 			return;
 		}
 
 		// BG alarms
-		if (sgv > this.properties.thresholds().bgHigh()) {
+		Thresholds t = this.effective.thresholds();
+		if (sgv > t.bgHigh()) {
 			setAlarm(new Alarm(3, "Urgent High", formatBg(sgv), "high"));
 		}
-		else if (sgv < this.properties.thresholds().bgLow()) {
+		else if (sgv < t.bgLow()) {
 			setAlarm(new Alarm(3, "Urgent Low", formatBg(sgv), "low"));
 		}
-		else if (sgv > this.properties.thresholds().bgTargetTop()) {
+		else if (sgv > t.bgTargetTop()) {
 			setAlarm(new Alarm(2, "High", formatBg(sgv), "high"));
 		}
-		else if (sgv < this.properties.thresholds().bgTargetBottom()) {
+		else if (sgv < t.bgTargetBottom()) {
 			setAlarm(new Alarm(2, "Low", formatBg(sgv), "low"));
 		}
 		else {
@@ -108,11 +110,10 @@ public class AlarmEngine {
 	}
 
 	private String formatBg(int mgdl) {
-		double display = this.properties.toDisplayUnits(mgdl);
-		if ("mmol/l".equalsIgnoreCase(this.properties.units())) {
-			return String.valueOf(display);
+		if ("mmol/l".equalsIgnoreCase(this.effective.units())) {
+			return String.valueOf(Math.round(mgdl / 18.0 * 10.0) / 10.0);
 		}
-		return String.valueOf((int) display);
+		return String.valueOf(mgdl);
 	}
 
 	public record Alarm(int level, String title, String message, String type) {

@@ -3,6 +3,7 @@ import { AppBar, Box, IconButton, Toolbar, Tooltip, Typography } from '@mui/mate
 import LogoutIcon from '@mui/icons-material/Logout'
 import NotificationsIcon from '@mui/icons-material/Notifications'
 import NotificationsOffIcon from '@mui/icons-material/NotificationsOff'
+import { useQueryClient } from '@tanstack/react-query'
 import { Dashboard } from './Dashboard'
 import { ApiSecretDialog } from './ApiSecretDialog'
 import { useStatus } from '../hooks/useNightscoutData'
@@ -15,6 +16,7 @@ export function AppShell() {
   const status = useStatus()
   const [authOpen, setAuthOpen] = useState(false)
   const notify = useNotifications()
+  const queryClient = useQueryClient()
 
   useEffect(() => {
     const hasHash = getApiSecretHash() != null
@@ -55,6 +57,7 @@ export function AppShell() {
               size="small"
               onClick={() => {
                 clearApiSecretHash()
+                queryClient.removeQueries({ queryKey: ['verifyauth'] })
                 setAuthOpen(true)
               }}
               aria-label="sign out"

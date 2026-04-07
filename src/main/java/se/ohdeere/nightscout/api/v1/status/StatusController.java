@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 import se.ohdeere.nightscout.NightscoutProperties;
+import se.ohdeere.nightscout.NightscoutProperties.Thresholds;
+import se.ohdeere.nightscout.service.admin.EffectiveSettings;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,8 +18,11 @@ class StatusController {
 
 	private final NightscoutProperties properties;
 
-	StatusController(NightscoutProperties properties) {
+	private final EffectiveSettings effective;
+
+	StatusController(NightscoutProperties properties, EffectiveSettings effective) {
 		this.properties = properties;
+		this.effective = effective;
 	}
 
 	@GetMapping("/api/versions")
@@ -40,7 +45,8 @@ class StatusController {
 	Map<String, Object> status() {
 		List<String> enabledPlugins = Arrays.asList(this.properties.enable().split("\\s+"));
 		Map<String, Object> settings = new LinkedHashMap<>();
-		settings.put("units", this.properties.units());
+		Thresholds thresholds = this.effective.thresholds();
+		settings.put("units", this.effective.units());
 		settings.put("timeFormat", this.properties.timeFormat());
 		settings.put("nightMode", this.properties.nightMode());
 		settings.put("theme", this.properties.theme());
@@ -48,14 +54,12 @@ class StatusController {
 		settings.put("showPlugins", this.properties.showPlugins());
 		settings.put("enable", enabledPlugins);
 		settings.put("alarmTypes", List.of(this.properties.alarmTypes()));
-		settings.put("customTitle", this.properties.customTitle());
+		settings.put("customTitle", this.effective.customTitle());
 		settings.put("authDefaultRoles", this.properties.authDefaultRoles());
-		settings.put("alarmTimeagoWarnMins", this.properties.alarmTimeagoWarnMins());
-		settings.put("alarmTimeagoUrgentMins", this.properties.alarmTimeagoUrgentMins());
-		settings.put("thresholds",
-				Map.of("bgHigh", this.properties.thresholds().bgHigh(), "bgTargetTop",
-						this.properties.thresholds().bgTargetTop(), "bgTargetBottom",
-						this.properties.thresholds().bgTargetBottom(), "bgLow", this.properties.thresholds().bgLow()));
+		settings.put("alarmTimeagoWarnMins", this.effective.alarmTimeagoWarnMins());
+		settings.put("alarmTimeagoUrgentMins", this.effective.alarmTimeagoUrgentMins());
+		settings.put("thresholds", Map.of("bgHigh", thresholds.bgHigh(), "bgTargetTop", thresholds.bgTargetTop(),
+				"bgTargetBottom", thresholds.bgTargetBottom(), "bgLow", thresholds.bgLow()));
 
 		Map<String, Object> result = new LinkedHashMap<>();
 		result.put("runtimeState", "loaded");

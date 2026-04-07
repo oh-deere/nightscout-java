@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import {
   Box,
   Button,
@@ -15,12 +15,18 @@ import {
   Typography,
 } from '@mui/material'
 import SettingsIcon from '@mui/icons-material/Settings'
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
 import {
   useViewSettings,
   type BgRanges,
   type ChartHours,
   type TirHours,
 } from '../hooks/useViewSettings'
+import { useVerifyAuth } from '../hooks/useNightscoutData'
+
+const AdminDialog = lazy(() =>
+  import('./AdminDialog').then((m) => ({ default: m.AdminDialog })),
+)
 
 const CHART_OPTIONS: ChartHours[] = [3, 6, 12, 24]
 const TIR_OPTIONS: { hours: TirHours; label: string }[] = [
@@ -31,7 +37,10 @@ const TIR_OPTIONS: { hours: TirHours; label: string }[] = [
 
 export function SettingsMenu() {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
+  const [adminOpen, setAdminOpen] = useState(false)
   const settings = useViewSettings()
+  const auth = useVerifyAuth()
+  const isAdmin = auth.data?.admin === true
 
   return (
     <>
@@ -117,9 +126,31 @@ export function SettingsMenu() {
                 />
               </Stack>
             </Section>
+
+            {isAdmin && (
+              <>
+                <Divider />
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<AdminPanelSettingsIcon />}
+                  onClick={() => {
+                    setAnchor(null)
+                    setAdminOpen(true)
+                  }}
+                >
+                  User &amp; runtime admin
+                </Button>
+              </>
+            )}
           </Stack>
         </Box>
       </Popover>
+      {adminOpen && (
+        <Suspense fallback={null}>
+          <AdminDialog open={adminOpen} onClose={() => setAdminOpen(false)} />
+        </Suspense>
+      )}
     </>
   )
 }

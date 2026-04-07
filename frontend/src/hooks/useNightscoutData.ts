@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { api } from '../api/client'
+import { api, getApiSecretHash } from '../api/client'
 
 const POLL_INTERVAL_MS = 60_000 // 1 minute
 
@@ -25,6 +25,16 @@ export function useTreatments(hours = 6) {
     queryKey: ['treatments', hours],
     queryFn: () => api.treatmentsSince(new Date(Date.now() - hours * 3600_000).toISOString()),
     refetchInterval: POLL_INTERVAL_MS,
+  })
+}
+
+export function useVerifyAuth() {
+  return useQuery({
+    queryKey: ['verifyauth'],
+    queryFn: api.verifyAuth,
+    staleTime: 5 * 60_000,
+    retry: false,
+    enabled: getApiSecretHash() != null,
   })
 }
 
