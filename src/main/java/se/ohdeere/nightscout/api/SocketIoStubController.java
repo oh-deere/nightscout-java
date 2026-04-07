@@ -155,13 +155,46 @@ class SocketIoStubController {
 			.map(this::entryToMap)
 			.toList();
 
+		// Minimal default profile so the chart can initialize
+		Map<String, Object> profileInner = new LinkedHashMap<>();
+		profileInner.put("dia", 3);
+		profileInner.put("carbs_hr", 20);
+		profileInner.put("delay", 20);
+		profileInner.put("carbratio", List.of(Map.of("time", "00:00", "value", 10)));
+		profileInner.put("sens", List.of(Map.of("time", "00:00", "value", 50)));
+		profileInner.put("basal", List.of(Map.of("time", "00:00", "value", 1.0)));
+		profileInner.put("target_low", List.of(Map.of("time", "00:00", "value", 70)));
+		profileInner.put("target_high", List.of(Map.of("time", "00:00", "value", 180)));
+		profileInner.put("units", "mg/dl");
+		profileInner.put("timezone", "Europe/Stockholm");
+
+		Map<String, Object> profile = new LinkedHashMap<>();
+		profile.put("_id", "default-profile");
+		profile.put("defaultProfile", "Default");
+		profile.put("startDate", "2020-01-01T00:00:00.000Z");
+		profile.put("mills", 1577836800000L);
+		profile.put("units", "mg/dl");
+		profile.put("store", Map.of("Default", profileInner));
+		profile.put("created_at", "2020-01-01T00:00:00.000Z");
+
 		Map<String, Object> data = new LinkedHashMap<>();
+		data.put("delta", false);
+		data.put("lastUpdated", System.currentTimeMillis());
 		data.put("sgvs", sgvs);
 		data.put("mbgs", List.of());
 		data.put("cals", List.of());
 		data.put("treatments", List.of());
-		data.put("profiles", List.of());
+		data.put("profiles", List.of(profile));
 		data.put("devicestatus", List.of());
+		data.put("food", List.of());
+		data.put("activity", List.of());
+		data.put("sitechangeTreatments", List.of());
+		data.put("insulinchangeTreatments", List.of());
+		data.put("sensorTreatments", List.of());
+		data.put("batteryTreatments", List.of());
+		data.put("profileTreatments", List.of());
+		data.put("combobolusTreatments", List.of());
+		data.put("tempbasalTreatments", List.of());
 		return data;
 	}
 
