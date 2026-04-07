@@ -1,7 +1,8 @@
 application-local.properties
 
-# Nightscout UI static files (built from cgm-remote-monitor, not checked in)
-src/main/resources/static/
+# Frontend build artifacts
+frontend/node_modules/
+frontend/dist/
 
 .DS_Store
 build
