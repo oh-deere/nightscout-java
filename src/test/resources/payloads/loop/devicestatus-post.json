@@ -1,0 +1,31 @@
+[
+  {
+    "device": "loop://iPhone",
+    "created_at": "__NOW_ISO__",
+    "loop": {
+      "name": "Loop",
+      "version": "3.4.1",
+      "timestamp": "__NOW_ISO__",
+      "iob": { "iob": 0.85, "timestamp": "__NOW_ISO__" },
+      "cob": { "cob": 12, "timestamp": "__NOW_ISO__" },
+      "predicted": {
+        "startDate": "__NOW_ISO__",
+        "values": [125, 130, 135, 140, 142, 140, 135]
+      },
+      "recommendedBolus": 0,
+      "enacted": {
+        "rate": 0.5,
+        "duration": 30,
+        "timestamp": "__NOW_ISO__",
+        "received": true
+      }
+    },
+    "pump": {
+      "clock": "__NOW_ISO__",
+      "manufacturer": "Insulet",
+      "model": "Dash",
+      "reservoir": 88.5
+    },
+    "uploader": { "battery": 72 }
+  }
+]

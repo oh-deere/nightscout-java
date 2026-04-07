@@ -1,0 +1,10 @@
+[
+  {
+    "eventType": "Correction Bolus",
+    "created_at": "__NOW_ISO__",
+    "insulin": 1.5,
+    "enteredBy": "loop://iPhone",
+    "syncIdentifier": "__SYNC_ID__",
+    "insulinType": "novolog"
+  }
+]

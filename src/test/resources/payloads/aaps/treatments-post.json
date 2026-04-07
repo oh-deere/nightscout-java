@@ -1,0 +1,21 @@
+[
+  {
+    "eventType": "Meal Bolus",
+    "created_at": "__NOW_ISO__",
+    "carbs": 45,
+    "insulin": 4.2,
+    "enteredBy": "AndroidAPS",
+    "notes": "Lunch",
+    "glucose": 118,
+    "glucoseType": "Sensor",
+    "units": "mg/dl"
+  },
+  {
+    "eventType": "Temp Basal",
+    "created_at": "__NOW_ISO__",
+    "duration": 30,
+    "absolute": 0.8,
+    "rate": 0.8,
+    "enteredBy": "openaps://AndroidAPS"
+  }
+]

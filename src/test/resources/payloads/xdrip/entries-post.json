@@ -1,0 +1,23 @@
+[
+  {
+    "type": "sgv",
+    "date": __NOW__,
+    "dateString": "__NOW_ISO__",
+    "sgv": 142,
+    "direction": "Flat",
+    "device": "xDrip-LimiTTer",
+    "noise": 1,
+    "filtered": 142000,
+    "unfiltered": 142500,
+    "rssi": 100
+  },
+  {
+    "type": "sgv",
+    "date": __NOW_PLUS_1__,
+    "dateString": "__NOW_PLUS_1_ISO__",
+    "sgv": 145,
+    "direction": "FortyFiveUp",
+    "device": "xDrip-LimiTTer",
+    "noise": 1
+  }
+]

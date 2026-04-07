@@ -1,0 +1,11 @@
+[
+  {
+    "type": "sgv",
+    "date": __NOW__,
+    "dateString": "__NOW_ISO__",
+    "sgv": 118,
+    "direction": "Flat",
+    "device": "AndroidAPS-3.2.0",
+    "utcOffset": 60
+  }
+]

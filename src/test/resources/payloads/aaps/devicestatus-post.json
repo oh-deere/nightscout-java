@@ -1,0 +1,28 @@
+[
+  {
+    "device": "openaps://AndroidAPS",
+    "created_at": "__NOW_ISO__",
+    "uploader": {
+      "battery": 87,
+      "batteryVoltage": 4123
+    },
+    "pump": {
+      "clock": "__NOW_ISO__",
+      "battery": { "voltage": 1.42 },
+      "reservoir": 152.3,
+      "status": { "status": "normal", "timestamp": "__NOW_ISO__" }
+    },
+    "openaps": {
+      "iob": { "iob": 1.23, "activity": 0.012, "time": "__NOW_ISO__" },
+      "suggested": {
+        "temp": "absolute",
+        "bg": 118,
+        "tick": "+2",
+        "eventualBG": 130,
+        "insulinReq": 0,
+        "reason": "in range",
+        "timestamp": "__NOW_ISO__"
+      }
+    }
+  }
+]
