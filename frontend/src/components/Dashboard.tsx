@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Box, Stack, Typography } from '@mui/material'
+import { useTranslation } from 'react-i18next'
 import { BgHeader } from './BgHeader'
 import { BgChart } from './BgChart'
 import { PluginPills } from './PluginPills'
@@ -24,6 +25,7 @@ interface Props {
 export function Dashboard({ notificationsEnabled }: Props) {
   const view = useViewSettings()
   const status = useStatus()
+  const { t } = useTranslation()
   const entries = useEntries(view.chartHours)
   const treatments = useTreatments(view.chartHours)
   const properties = useProperties()
@@ -58,7 +60,7 @@ export function Dashboard({ notificationsEnabled }: Props) {
   if (!status.data) {
     return (
       <Box sx={{ textAlign: 'center', py: 8 }}>
-        <Typography color="text.secondary">Loading…</Typography>
+        <Typography color="text.secondary">{t('app.loading')}</Typography>
       </Box>
     )
   }

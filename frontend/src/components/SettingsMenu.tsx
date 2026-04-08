@@ -16,6 +16,7 @@ import {
 } from '@mui/material'
 import SettingsIcon from '@mui/icons-material/Settings'
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
+import { useTranslation } from 'react-i18next'
 import {
   useViewSettings,
   type BgRanges,
@@ -41,10 +42,11 @@ export function SettingsMenu() {
   const settings = useViewSettings()
   const auth = useVerifyAuth()
   const isAdmin = auth.data?.admin === true
+  const { t } = useTranslation()
 
   return (
     <>
-      <Tooltip title="View settings">
+      <Tooltip title={t('settings.open')}>
         <IconButton color="inherit" size="small" onClick={(e) => setAnchor(e.currentTarget)}>
           <SettingsIcon />
         </IconButton>
@@ -59,7 +61,7 @@ export function SettingsMenu() {
       >
         <Box sx={{ p: 2.5, width: 320 }}>
           <Stack spacing={2.5}>
-            <Section label="Graph time range">
+            <Section label={t('settings.sections.graphRange')}>
               <ButtonGroup size="small" variant="outlined" fullWidth>
                 {CHART_OPTIONS.map((h) => (
                   <Button
@@ -73,7 +75,7 @@ export function SettingsMenu() {
               </ButtonGroup>
             </Section>
 
-            <Section label="Time in Range window">
+            <Section label={t('settings.sections.tirWindow')}>
               <ButtonGroup size="small" variant="outlined" fullWidth>
                 {TIR_OPTIONS.map((o) => (
                   <Button
@@ -89,18 +91,18 @@ export function SettingsMenu() {
 
             <Divider />
 
-            <Section label="Glucose ranges (mg/dL)">
+            <Section label={t('settings.sections.ranges')}>
               <RangeEditor ranges={settings.ranges} onChange={settings.setRanges} />
               <Button size="small" onClick={settings.resetRanges} sx={{ alignSelf: 'flex-end' }}>
-                Reset to defaults
+                {t('settings.ranges.reset')}
               </Button>
             </Section>
 
             <Divider />
 
-            <Section label="Chart line">
+            <Section label={t('settings.sections.chartLine')}>
               <Stack direction="row" alignItems="center" justifyContent="space-between">
-                <Typography variant="body2">Show connecting line</Typography>
+                <Typography variant="body2">{t('settings.chart.showLine')}</Typography>
                 <Switch
                   size="small"
                   checked={settings.showLine}
@@ -108,7 +110,7 @@ export function SettingsMenu() {
                 />
               </Stack>
               <Stack spacing={0.5} sx={{ opacity: settings.showLine ? 1 : 0.4 }}>
-                <Typography variant="body2">Smoothing</Typography>
+                <Typography variant="body2">{t('settings.chart.smoothing')}</Typography>
                 <Slider
                   size="small"
                   value={settings.smoothing}
@@ -117,10 +119,10 @@ export function SettingsMenu() {
                   max={3}
                   step={1}
                   marks={[
-                    { value: 0, label: 'Raw' },
-                    { value: 1, label: 'Light' },
-                    { value: 2, label: 'Medium' },
-                    { value: 3, label: 'Heavy' },
+                    { value: 0, label: t('settings.chart.raw') },
+                    { value: 1, label: t('settings.chart.light') },
+                    { value: 2, label: t('settings.chart.medium') },
+                    { value: 3, label: t('settings.chart.heavy') },
                   ]}
                   disabled={!settings.showLine}
                 />
@@ -139,7 +141,7 @@ export function SettingsMenu() {
                     setAdminOpen(true)
                   }}
                 >
-                  User &amp; runtime admin
+                  {t('settings.adminButton')}
                 </Button>
               </>
             )}
@@ -173,6 +175,7 @@ function RangeEditor({
   ranges: BgRanges
   onChange: (next: BgRanges) => void
 }) {
+  const { t } = useTranslation()
   const update = (key: keyof BgRanges) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = parseInt(e.target.value, 10)
     if (Number.isNaN(v)) return
@@ -182,25 +185,25 @@ function RangeEditor({
   return (
     <Stack spacing={1}>
       <RangeRow
-        label="Urgent high"
+        label={t('settings.ranges.urgentHigh')}
         value={ranges.urgentHigh}
         onChange={update('urgentHigh')}
         color="#e53935"
       />
       <RangeRow
-        label="Target high"
+        label={t('settings.ranges.targetHigh')}
         value={ranges.targetHigh}
         onChange={update('targetHigh')}
         color="#ffb300"
       />
       <RangeRow
-        label="Target low"
+        label={t('settings.ranges.targetLow')}
         value={ranges.targetLow}
         onChange={update('targetLow')}
         color="#ffb300"
       />
       <RangeRow
-        label="Urgent low"
+        label={t('settings.ranges.urgentLow')}
         value={ranges.urgentLow}
         onChange={update('urgentLow')}
         color="#e53935"

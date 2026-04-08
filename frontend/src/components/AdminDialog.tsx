@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Alert,
   Box,
@@ -40,22 +41,23 @@ type TabValue = 'keys' | 'settings' | 'alarms' | 'audit'
 
 export function AdminDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [tab, setTab] = useState<TabValue>('keys')
+  const { t } = useTranslation()
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', pb: 0 }}>
         <Typography variant="h6" sx={{ flexGrow: 1 }}>
-          User & runtime admin
+          {t('admin.title')}
         </Typography>
-        <IconButton size="small" onClick={onClose} aria-label="close">
+        <IconButton size="small" onClick={onClose} aria-label={t('admin.close')}>
           <CloseIcon />
         </IconButton>
       </DialogTitle>
       <Tabs value={tab} onChange={(_, v) => setTab(v as TabValue)} sx={{ px: 3 }}>
-        <Tab value="keys" label="API keys" />
-        <Tab value="settings" label="Runtime settings" />
-        <Tab value="alarms" label="Alarm history" />
-        <Tab value="audit" label="Audit log" />
+        <Tab value="keys" label={t('admin.tabs.keys')} />
+        <Tab value="settings" label={t('admin.tabs.settings')} />
+        <Tab value="alarms" label={t('admin.tabs.alarms')} />
+        <Tab value="audit" label={t('admin.tabs.audit')} />
       </Tabs>
       <DialogContent dividers sx={{ minHeight: 360 }}>
         {tab === 'keys' && <KeysTab />}
@@ -71,6 +73,7 @@ export function AdminDialog({ open, onClose }: { open: boolean; onClose: () => v
 
 function KeysTab() {
   const qc = useQueryClient()
+  const { t } = useTranslation()
   const keys = useQuery({ queryKey: ['admin', 'keys'], queryFn: api.admin.listKeys })
   const [name, setName] = useState('')
   const [scope, setScope] = useState<AdminApiKey['scope']>('write')
@@ -95,7 +98,7 @@ function KeysTab() {
   const submit = () => {
     setError(null)
     if (!name.trim()) {
-      setError('Name is required')
+      setError(t('admin.keys.nameRequired'))
       return
     }
     createMutation.mutate()
@@ -106,7 +109,7 @@ function KeysTab() {
       <Stack direction="row" spacing={1.5} alignItems="center">
         <TextField
           size="small"
-          label="Key name"
+          label={t('admin.keys.keyName')}
           value={name}
           onChange={(e) => setName(e.target.value)}
           sx={{ flex: 1 }}
@@ -114,17 +117,17 @@ function KeysTab() {
         <TextField
           size="small"
           select
-          label="Scope"
+          label={t('admin.keys.scope')}
           value={scope}
           onChange={(e) => setScope(e.target.value as AdminApiKey['scope'])}
           sx={{ width: 140 }}
         >
-          <MenuItem value="read">Read</MenuItem>
-          <MenuItem value="write">Write</MenuItem>
-          <MenuItem value="admin">Admin</MenuItem>
+          <MenuItem value="read">{t('admin.keys.scopeRead')}</MenuItem>
+          <MenuItem value="write">{t('admin.keys.scopeWrite')}</MenuItem>
+          <MenuItem value="admin">{t('admin.keys.scopeAdmin')}</MenuItem>
         </TextField>
         <Button variant="contained" onClick={submit} disabled={createMutation.isPending}>
-          Create
+          {t('admin.keys.create')}
         </Button>
       </Stack>
 
@@ -138,14 +141,14 @@ function KeysTab() {
             <IconButton
               size="small"
               onClick={() => navigator.clipboard.writeText(created.token)}
-              aria-label="copy token"
+              aria-label={t('admin.keys.copyToken')}
             >
               <ContentCopyIcon fontSize="small" />
             </IconButton>
           }
         >
           <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            Save this token now — it will not be shown again:
+            {t('admin.keys.saveTokenWarning')}
           </Typography>
           <Typography
             variant="body2"
@@ -163,11 +166,11 @@ function KeysTab() {
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Scope</TableCell>
-                <TableCell>Created</TableCell>
-                <TableCell>Last used</TableCell>
-                <TableCell>Status</TableCell>
+                <TableCell>{t('admin.keys.table.name')}</TableCell>
+                <TableCell>{t('admin.keys.table.scope')}</TableCell>
+                <TableCell>{t('admin.keys.table.created')}</TableCell>
+                <TableCell>{t('admin.keys.table.lastUsed')}</TableCell>
+                <TableCell>{t('admin.keys.table.status')}</TableCell>
                 <TableCell />
               </TableRow>
             </TableHead>
@@ -184,12 +187,12 @@ function KeysTab() {
                     <Chip
                       size="small"
                       color={k.enabled ? 'success' : 'default'}
-                      label={k.enabled ? 'Enabled' : 'Revoked'}
+                      label={k.enabled ? t('admin.keys.enabled') : t('admin.keys.revoked')}
                     />
                   </TableCell>
                   <TableCell align="right">
                     {k.enabled && (
-                      <Tooltip title="Revoke">
+                      <Tooltip title={t('admin.keys.revoke')}>
                         <IconButton
                           size="small"
                           onClick={() => revokeMutation.mutate(k.id)}
@@ -206,7 +209,7 @@ function KeysTab() {
                 <TableRow>
                   <TableCell colSpan={6}>
                     <Typography variant="body2" color="text.secondary" textAlign="center">
-                      No API keys yet
+                      {t('admin.keys.table.empty')}
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -221,25 +224,52 @@ function KeysTab() {
 
 /* ---------- Runtime settings ---------- */
 
-const KNOWN_KEYS: { key: string; label: string; help: string }[] = [
-  { key: 'units', label: 'Units', help: '"mg/dl" or "mmol/l"' },
-  { key: 'customTitle', label: 'Custom title', help: 'Header title in the dashboard' },
-  { key: 'thresholds.bgHigh', label: 'BG urgent high (mg/dL)', help: 'Number, e.g. 260' },
-  { key: 'thresholds.bgTargetTop', label: 'BG target top (mg/dL)', help: 'Number, e.g. 180' },
-  { key: 'thresholds.bgTargetBottom', label: 'BG target bottom (mg/dL)', help: 'Number, e.g. 80' },
-  { key: 'thresholds.bgLow', label: 'BG urgent low (mg/dL)', help: 'Number, e.g. 55' },
-  { key: 'alarmTimeagoWarnMins', label: 'Stale data warn (min)', help: 'Number, e.g. 15' },
-  { key: 'alarmTimeagoUrgentMins', label: 'Stale data urgent (min)', help: 'Number, e.g. 30' },
-  { key: 'delta.warn', label: 'Rate warn (mg/dL per 5 min)', help: 'Number, e.g. 15' },
-  { key: 'delta.urgent', label: 'Rate urgent (mg/dL per 5 min)', help: 'Number, e.g. 25' },
+// Backend setting key → i18n bundle slug. Extending this list grows the
+// dropdown in SettingsTab; the resolved label/help comes from
+// admin.knownKeys.<slug> in the active language bundle.
+const KNOWN_KEY_DEFINITIONS: { key: string; slug: string }[] = [
+  { key: 'units', slug: 'units' },
+  { key: 'customTitle', slug: 'customTitle' },
+  { key: 'theme', slug: 'theme' },
+  { key: 'language', slug: 'language' },
+  { key: 'timeFormat', slug: 'timeFormat' },
+  { key: 'nightMode', slug: 'nightMode' },
+  { key: 'alarmTypes', slug: 'alarmTypes' },
+  { key: 'authDefaultRoles', slug: 'authDefaultRoles' },
+  { key: 'devicestatusAdvanced', slug: 'devicestatusAdvanced' },
+  { key: 'bolusRenderOver', slug: 'bolusRenderOver' },
+  { key: 'thresholds.bgHigh', slug: 'bgUrgentHigh' },
+  { key: 'thresholds.bgTargetTop', slug: 'bgTargetTop' },
+  { key: 'thresholds.bgTargetBottom', slug: 'bgTargetBottom' },
+  { key: 'thresholds.bgLow', slug: 'bgUrgentLow' },
+  { key: 'alarmTimeagoWarnMins', slug: 'timeagoWarn' },
+  { key: 'alarmTimeagoUrgentMins', slug: 'timeagoUrgent' },
+  { key: 'delta.warn', slug: 'deltaWarn' },
+  { key: 'delta.urgent', slug: 'deltaUrgent' },
+  { key: 'sage.info', slug: 'sageInfo' },
+  { key: 'sage.warn', slug: 'sageWarn' },
+  { key: 'sage.urgent', slug: 'sageUrgent' },
 ]
 
 function SettingsTab() {
   const qc = useQueryClient()
+  const { t } = useTranslation()
   const settings = useQuery({ queryKey: ['admin', 'settings'], queryFn: api.admin.listSettings })
   const [key, setKey] = useState('')
   const [value, setValue] = useState('')
   const [error, setError] = useState<string | null>(null)
+
+  // Resolve labels + help text against the active language each render so
+  // language switches at runtime are picked up immediately.
+  const knownKeys = useMemo(
+    () =>
+      KNOWN_KEY_DEFINITIONS.map((d) => ({
+        key: d.key,
+        label: t(`admin.knownKeys.${d.slug}.label`),
+        help: t(`admin.knownKeys.${d.slug}.help`),
+      })),
+    [t],
+  )
 
   const putMutation = useMutation({
     mutationFn: () => {
@@ -270,14 +300,14 @@ function SettingsTab() {
         <TextField
           size="small"
           select
-          label="Key"
+          label={t('admin.settings.keyLabel')}
           value={key}
           onChange={(e) => setKey(e.target.value)}
           sx={{ flex: 1 }}
-          helperText={KNOWN_KEYS.find((k) => k.key === key)?.help ?? 'Pick or type a key'}
+          helperText={knownKeys.find((k) => k.key === key)?.help ?? t('admin.settings.keyHelper')}
           slotProps={{ select: { native: false } }}
         >
-          {KNOWN_KEYS.map((k) => (
+          {knownKeys.map((k) => (
             <MenuItem key={k.key} value={k.key}>
               {k.label}
             </MenuItem>
@@ -285,7 +315,7 @@ function SettingsTab() {
         </TextField>
         <TextField
           size="small"
-          label='Value (JSON or string)'
+          label={t('admin.settings.valueLabel')}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           sx={{ flex: 2 }}
@@ -295,13 +325,13 @@ function SettingsTab() {
           onClick={() => {
             setError(null)
             if (!key.trim()) {
-              setError('Key is required')
+              setError(t('admin.settings.keyRequired'))
               return
             }
             putMutation.mutate()
           }}
         >
-          Save
+          {t('admin.settings.save')}
         </Button>
       </Stack>
 
@@ -313,10 +343,10 @@ function SettingsTab() {
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell>Key</TableCell>
-                <TableCell>Value</TableCell>
-                <TableCell>Updated</TableCell>
-                <TableCell>By</TableCell>
+                <TableCell>{t('admin.settings.table.key')}</TableCell>
+                <TableCell>{t('admin.settings.table.value')}</TableCell>
+                <TableCell>{t('admin.settings.table.updated')}</TableCell>
+                <TableCell>{t('admin.settings.table.by')}</TableCell>
                 <TableCell />
               </TableRow>
             </TableHead>
@@ -330,11 +360,11 @@ function SettingsTab() {
                   <TableCell>{formatDate(s.updatedAt)}</TableCell>
                   <TableCell>{s.updatedBy}</TableCell>
                   <TableCell align="right">
-                    <Tooltip title="Delete">
+                    <Tooltip title={t('admin.settings.delete')}>
                       <IconButton
                         size="small"
                         onClick={() => deleteMutation.mutate(s.key)}
-                        aria-label="delete setting"
+                        aria-label={t('admin.settings.delete')}
                       >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
@@ -346,7 +376,7 @@ function SettingsTab() {
                 <TableRow>
                   <TableCell colSpan={5}>
                     <Typography variant="body2" color="text.secondary" textAlign="center">
-                      No runtime settings yet
+                      {t('admin.settings.table.empty')}
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -362,22 +392,23 @@ function SettingsTab() {
 /* ---------- Alarm history ---------- */
 
 function AlarmHistoryTab() {
+  const { t } = useTranslation()
   const history = useQuery({ queryKey: ['admin', 'alarms'], queryFn: () => api.alarmHistory(100) })
 
   return (
     <Box>
       {history.isLoading && <CircularProgress size={24} />}
-      {history.error && <Alert severity="error">Failed to load alarm history</Alert>}
+      {history.error && <Alert severity="error">{t('admin.alarms.loadFailed')}</Alert>}
       {history.data && (
         <TableContainer>
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell>When</TableCell>
-                <TableCell>Type</TableCell>
-                <TableCell>Level</TableCell>
-                <TableCell>Title</TableCell>
-                <TableCell>Message</TableCell>
+                <TableCell>{t('admin.alarms.table.when')}</TableCell>
+                <TableCell>{t('admin.alarms.table.type')}</TableCell>
+                <TableCell>{t('admin.alarms.table.level')}</TableCell>
+                <TableCell>{t('admin.alarms.table.title')}</TableCell>
+                <TableCell>{t('admin.alarms.table.message')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -391,7 +422,7 @@ function AlarmHistoryTab() {
                     <Chip
                       size="small"
                       color={e.level >= 3 ? 'error' : 'warning'}
-                      label={e.level >= 3 ? 'urgent' : 'warn'}
+                      label={e.level >= 3 ? t('admin.alarms.level.urgent') : t('admin.alarms.level.warn')}
                     />
                   </TableCell>
                   <TableCell>{e.title}</TableCell>
@@ -402,7 +433,7 @@ function AlarmHistoryTab() {
                 <TableRow>
                   <TableCell colSpan={5}>
                     <Typography variant="body2" color="text.secondary" textAlign="center">
-                      No alarms recorded yet
+                      {t('admin.alarms.table.empty')}
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -418,21 +449,22 @@ function AlarmHistoryTab() {
 /* ---------- Audit log ---------- */
 
 function AuditTab() {
+  const { t } = useTranslation()
   const audit = useQuery({ queryKey: ['admin', 'audit'], queryFn: () => api.admin.audit(100) })
 
   return (
     <Box>
       {audit.isLoading && <CircularProgress size={24} />}
-      {audit.error && <Alert severity="error">Failed to load audit log</Alert>}
+      {audit.error && <Alert severity="error">{t('admin.audit.loadFailed')}</Alert>}
       {audit.data && (
         <TableContainer>
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell>When</TableCell>
-                <TableCell>Actor</TableCell>
-                <TableCell>Action</TableCell>
-                <TableCell>Target</TableCell>
+                <TableCell>{t('admin.audit.table.when')}</TableCell>
+                <TableCell>{t('admin.audit.table.actor')}</TableCell>
+                <TableCell>{t('admin.audit.table.action')}</TableCell>
+                <TableCell>{t('admin.audit.table.target')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>

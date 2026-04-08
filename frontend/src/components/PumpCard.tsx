@@ -3,6 +3,7 @@ import BatteryFullIcon from '@mui/icons-material/BatteryFull'
 import OpacityIcon from '@mui/icons-material/Opacity'
 import LoopIcon from '@mui/icons-material/Loop'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import { useTranslation } from 'react-i18next'
 import type { PluginProperties, PumpData } from '../types/nightscout'
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function PumpCard({ properties }: Props) {
+  const { t } = useTranslation()
   const data = properties?.pump?.data as PumpData | undefined
   if (!data) return null
 
@@ -38,18 +40,18 @@ export function PumpCard({ properties }: Props) {
             {sourceLabel}
           </Typography>
           {data.loopStale && (
-            <Tooltip title={`Last loop ${data.loopAgeMinutes ?? '?'} min ago`}>
+            <Tooltip title={t('pump.minAgo', { count: data.loopAgeMinutes ?? 0 })}>
               <Chip
                 size="small"
                 color="warning"
                 icon={<WarningAmberIcon />}
-                label="Stale loop"
+                label={t('pump.staleLoop')}
               />
             </Tooltip>
           )}
           {!data.loopStale && data.loopAgeMinutes != null && (
             <Typography variant="caption" color="text.secondary">
-              {data.loopAgeMinutes} min ago
+              {t('pump.minAgo', { count: data.loopAgeMinutes })}
             </Typography>
           )}
         </Stack>
@@ -61,31 +63,35 @@ export function PumpCard({ properties }: Props) {
             gap: 1.5,
           }}
         >
-          {data.loopIob != null && <Metric label="IOB" value={`${data.loopIob.toFixed(2)} U`} />}
-          {data.loopCob != null && <Metric label="COB" value={`${data.loopCob.toFixed(0)} g`} />}
+          {data.loopIob != null && (
+            <Metric label={t('pump.iob')} value={`${data.loopIob.toFixed(2)} U`} />
+          )}
+          {data.loopCob != null && (
+            <Metric label={t('pump.cob')} value={`${data.loopCob.toFixed(0)} g`} />
+          )}
           {data.pumpReservoir != null && (
             <Metric
-              label="Reservoir"
+              label={t('pump.reservoir')}
               value={`${data.pumpReservoir.toFixed(1)} U`}
               icon={<OpacityIcon fontSize="small" />}
             />
           )}
           {data.pumpBatteryPercent != null && (
             <Metric
-              label="Battery"
+              label={t('pump.battery')}
               value={`${data.pumpBatteryPercent}%`}
               icon={<BatteryFullIcon fontSize="small" />}
             />
           )}
           {data.pumpBatteryPercent == null && data.pumpBatteryVoltage != null && (
             <Metric
-              label="Battery"
+              label={t('pump.battery')}
               value={`${data.pumpBatteryVoltage.toFixed(2)} V`}
               icon={<BatteryFullIcon fontSize="small" />}
             />
           )}
           {data.openapsEventualBg != null && (
-            <Metric label="Eventual BG" value={`${data.openapsEventualBg}`} />
+            <Metric label={t('pump.eventualBg')} value={`${data.openapsEventualBg}`} />
           )}
         </Box>
 

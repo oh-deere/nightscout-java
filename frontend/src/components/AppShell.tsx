@@ -4,6 +4,8 @@ import LogoutIcon from '@mui/icons-material/Logout'
 import NotificationsIcon from '@mui/icons-material/Notifications'
 import NotificationsOffIcon from '@mui/icons-material/NotificationsOff'
 import { useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
+import i18n from '../i18n'
 import { Dashboard } from './Dashboard'
 import { ApiSecretDialog } from './ApiSecretDialog'
 import { useStatus } from '../hooks/useNightscoutData'
@@ -12,11 +14,22 @@ import { clearApiSecretHash, getApiSecretHash } from '../api/client'
 import { useNotifications } from '../hooks/useNotifications'
 import { SettingsMenu } from './SettingsMenu'
 
+const SUPPORTED_LANGUAGES = ['en', 'sv'] as const
+
 export function AppShell() {
   const status = useStatus()
   const [authOpen, setAuthOpen] = useState(false)
   const notify = useNotifications()
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
+
+  // Drive the active language from the runtime setting fetched in /api/v1/status.
+  useEffect(() => {
+    const lang = status.data?.settings.language
+    if (lang && SUPPORTED_LANGUAGES.includes(lang as (typeof SUPPORTED_LANGUAGES)[number])) {
+      void i18n.changeLanguage(lang)
+    }
+  }, [status.data?.settings.language])
 
   useEffect(() => {
     const hasHash = getApiSecretHash() != null
@@ -26,7 +39,7 @@ export function AppShell() {
     }
   }, [status.error])
 
-  const title = status.data?.settings.customTitle ?? 'Nightscout'
+  const title = status.data?.settings.customTitle ?? t('app.title')
 
   const handleNotifyClick = () => {
     if (notify.permission === 'granted') {
@@ -44,14 +57,14 @@ export function AppShell() {
             {title}
           </Typography>
           {notify.supported && (
-            <Tooltip title={notify.enabled ? 'Notifications on' : 'Enable notifications'}>
+            <Tooltip title={notify.enabled ? t('app.notificationsOn') : t('app.notificationsEnable')}>
               <IconButton color="inherit" size="small" onClick={handleNotifyClick}>
                 {notify.enabled ? <NotificationsIcon /> : <NotificationsOffIcon />}
               </IconButton>
             </Tooltip>
           )}
           <SettingsMenu />
-          <Tooltip title="Sign out">
+          <Tooltip title={t('app.signOut')}>
             <IconButton
               color="inherit"
               size="small"

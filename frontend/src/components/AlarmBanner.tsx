@@ -2,6 +2,7 @@ import { Alert, Button, IconButton, Stack, Tooltip, Typography } from '@mui/mate
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive'
 import NotificationsPausedIcon from '@mui/icons-material/NotificationsPaused'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { getApiSecretHash } from '../api/client'
 import type { AlarmInfo, PluginProperties } from '../types/nightscout'
 
@@ -38,6 +39,7 @@ interface Props {
 
 export function AlarmBanner({ properties }: Props) {
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
   const alarms: AlarmInfo[] = properties?.alarms ?? (properties?.alarm ? [properties.alarm] : [])
   const snoozes = properties?.snoozes ?? {}
 
@@ -69,7 +71,7 @@ export function AlarmBanner({ properties }: Props) {
               onClick={() => snoozeMutation.mutate(a.type)}
               disabled={snoozeMutation.isPending}
             >
-              Snooze {SNOOZE_MINUTES}m
+              {t('alarms.snooze', { minutes: SNOOZE_MINUTES })}
             </Button>
           }
         >
@@ -85,7 +87,7 @@ export function AlarmBanner({ properties }: Props) {
           severity="info"
           icon={<NotificationsPausedIcon />}
           action={
-            <Tooltip title="Clear snooze">
+            <Tooltip title={t('alarms.clearSnooze')}>
               <IconButton
                 size="small"
                 color="inherit"
@@ -99,7 +101,10 @@ export function AlarmBanner({ properties }: Props) {
           }
         >
           <Typography variant="body2">
-            <strong>{type}</strong> snoozed until {new Date(until).toLocaleTimeString()}
+            {t('alarms.snoozedUntil', {
+              type,
+              time: new Date(until).toLocaleTimeString(),
+            })}
           </Typography>
         </Alert>
       ))}

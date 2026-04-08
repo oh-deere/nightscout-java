@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { theme } from './theme/theme'
 import { AppShell } from './components/AppShell'
 import { ViewSettingsProvider } from './hooks/useViewSettings'
+import './i18n'
 
 const queryClient = new QueryClient({
   defaultOptions: {

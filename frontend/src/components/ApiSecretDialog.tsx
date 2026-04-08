@@ -8,6 +8,7 @@ import {
   DialogTitle,
   TextField,
 } from '@mui/material'
+import { useTranslation } from 'react-i18next'
 import { setApiSecretHash } from '../api/client'
 import { sha1Hex } from '../utils/sha1'
 
@@ -19,6 +20,7 @@ interface Props {
 export function ApiSecretDialog({ open, onClose }: Props) {
   const [secret, setSecret] = useState('')
   const [busy, setBusy] = useState(false)
+  const { t } = useTranslation()
 
   const handleSave = async () => {
     setBusy(true)
@@ -34,12 +36,9 @@ export function ApiSecretDialog({ open, onClose }: Props) {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>Authentication required</DialogTitle>
+      <DialogTitle>{t('auth.title')}</DialogTitle>
       <DialogContent>
-        <DialogContentText>
-          Enter the Nightscout API secret to view glucose data. The secret is hashed locally
-          and stored in your browser only.
-        </DialogContentText>
+        <DialogContentText>{t('auth.description')}</DialogContentText>
         <TextField
           autoFocus
           margin="dense"
@@ -51,12 +50,12 @@ export function ApiSecretDialog({ open, onClose }: Props) {
           onKeyDown={(e) => {
             if (e.key === 'Enter' && secret) handleSave()
           }}
-          placeholder="API_SECRET"
+          placeholder={t('auth.placeholder')}
         />
       </DialogContent>
       <DialogActions>
         <Button onClick={handleSave} disabled={!secret || busy} variant="contained">
-          Save
+          {t('auth.save')}
         </Button>
       </DialogActions>
     </Dialog>
