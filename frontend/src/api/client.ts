@@ -121,7 +121,10 @@ export const api = {
         sinceIso,
       )}&count=1000`,
     ),
-  properties: () => request<PluginProperties>('/api/v1/properties'),
+  properties: (offsetMinutes = -new Date().getTimezoneOffset(), agpDays = 14) =>
+    request<PluginProperties>(
+      `/api/v1/properties?offsetMinutes=${offsetMinutes}&agpDays=${agpDays}`,
+    ),
   alarmHistory: (limit = 50) =>
     request<AlarmHistoryEntry[]>(`/api/v1/alarms/history?limit=${limit}`),
   agp: (days = 14, bucketMinutes = 15, offsetMinutes = 0) =>

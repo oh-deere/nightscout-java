@@ -29,7 +29,7 @@ export function Dashboard({ notificationsEnabled }: Props) {
   const { t } = useTranslation()
   const entries = useEntries(view.chartHours)
   const treatments = useTreatments(view.chartHours)
-  const properties = useProperties()
+  const properties = useProperties(view.agpDays)
   const agp = useAgp(view.agpDays)
 
   const sortedEntries = useMemo(

@@ -118,6 +118,49 @@ class AgpServiceTests {
 		}
 	}
 
+	/* ---------- bucketAt() ---------- */
+
+	@Test
+	void bucketAtFindsMatchingTimeOfDay() {
+		long t = Instant.parse("2026-01-01T06:00:00Z").toEpochMilli();
+		List<AgpBucket> buckets = AgpService.compute(List.of(entry(t, 100), entry(t, 120)), 15, 0);
+
+		AgpBucket found = AgpService.bucketAt(buckets, t, 15, 0).orElseThrow();
+		assertThat(found.bucketMinute()).isEqualTo(6 * 60);
+	}
+
+	@Test
+	void bucketAtReturnsEmptyWhenSparse() {
+		long t = Instant.parse("2026-01-01T06:00:00Z").toEpochMilli();
+		List<AgpBucket> buckets = AgpService.compute(List.of(entry(t, 100)), 15, 0);
+
+		// Look up a bucket that has no data (08:00 vs 06:00 in our list)
+		long laterSameDay = t + 2 * 3600 * 1000L;
+		assertThat(AgpService.bucketAt(buckets, laterSameDay, 15, 0)).isEmpty();
+	}
+
+	/* ---------- percentileRank() ---------- */
+
+	@Test
+	void percentileRankInterpolatesBetweenAnchors() {
+		AgpBucket b = new AgpBucket(0, 80, 100, 120, 140, 160, 100);
+		// Exact anchors
+		assertThat(AgpService.percentileRank(b, 80)).isEqualTo(0);
+		assertThat(AgpService.percentileRank(b, 100)).isEqualTo(25);
+		assertThat(AgpService.percentileRank(b, 120)).isEqualTo(50);
+		assertThat(AgpService.percentileRank(b, 140)).isEqualTo(75);
+		assertThat(AgpService.percentileRank(b, 160)).isEqualTo(100);
+		// Halfway between p25 and p50 → 37.5
+		assertThat(AgpService.percentileRank(b, 110)).isEqualTo(37.5);
+	}
+
+	@Test
+	void percentileRankClampsBeyondAnchors() {
+		AgpBucket b = new AgpBucket(0, 80, 100, 120, 140, 160, 100);
+		assertThat(AgpService.percentileRank(b, 50)).isEqualTo(0);
+		assertThat(AgpService.percentileRank(b, 200)).isEqualTo(100);
+	}
+
 	@Test
 	void computeReturnsBucketsInOrder() {
 		// Three readings at 06:00, 12:00, 18:00 → three sorted buckets.

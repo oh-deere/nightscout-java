@@ -38,10 +38,11 @@ export function useVerifyAuth() {
   })
 }
 
-export function useProperties() {
+export function useProperties(agpDays = 14) {
+  const offsetMinutes = -new Date().getTimezoneOffset()
   return useQuery({
-    queryKey: ['properties'],
-    queryFn: api.properties,
+    queryKey: ['properties', offsetMinutes, agpDays],
+    queryFn: () => api.properties(offsetMinutes, agpDays),
     refetchInterval: POLL_INTERVAL_MS,
   })
 }

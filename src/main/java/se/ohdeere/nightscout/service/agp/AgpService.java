@@ -5,10 +5,14 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import se.ohdeere.nightscout.storage.entries.Entry;
 import se.ohdeere.nightscout.storage.entries.EntryRepository;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 /**
@@ -32,7 +36,17 @@ public class AgpService {
 	public record AgpBucket(int bucketMinute, double p5, double p25, double p50, double p75, double p95, long count) {
 	}
 
+	private record CacheKey(int days, int bucketMinutes, int offsetMinutes) {
+	}
+
+	private record CacheEntry(List<AgpBucket> value, Instant computedAt) {
+	}
+
+	private static final long CACHE_TTL_MS = 5L * 60 * 1000;
+
 	private final EntryRepository entries;
+
+	private final Map<CacheKey, CacheEntry> cache = new ConcurrentHashMap<>();
 
 	public AgpService(EntryRepository entries) {
 		this.entries = entries;
@@ -51,9 +65,74 @@ public class AgpService {
 		if (bucketMinutes <= 0 || 1440 % bucketMinutes != 0) {
 			bucketMinutes = 15;
 		}
-		long sinceMs = Instant.now().minus(Duration.ofDays(days)).toEpochMilli();
+		CacheKey key = new CacheKey(days, bucketMinutes, offsetMinutes);
+		CacheEntry hit = this.cache.get(key);
+		Instant now = Instant.now();
+		if (hit != null && Duration.between(hit.computedAt(), now).toMillis() < CACHE_TTL_MS) {
+			return hit.value();
+		}
+		long sinceMs = now.minus(Duration.ofDays(days)).toEpochMilli();
 		List<Entry> recent = this.entries.findByTypeAndDateFrom("sgv", sinceMs);
-		return compute(recent, bucketMinutes, offsetMinutes);
+		List<AgpBucket> result = compute(recent, bucketMinutes, offsetMinutes);
+		this.cache.put(key, new CacheEntry(result, now));
+		return result;
+	}
+
+	/**
+	 * Find the AGP bucket that contains a given timestamp + offset, in the existing
+	 * computed result. Returns empty when the bucket has no rows (sparse data) so callers
+	 * can fall back gracefully.
+	 */
+	public static Optional<AgpBucket> bucketAt(List<AgpBucket> buckets, long dateMs, int bucketMinutes,
+			int offsetMinutes) {
+		if (buckets == null || buckets.isEmpty() || bucketMinutes <= 0) {
+			return Optional.empty();
+		}
+		int minuteOfDay = (int) ((((dateMs / 60_000L) + offsetMinutes) % 1440 + 1440) % 1440);
+		int bucketMinute = (minuteOfDay / bucketMinutes) * bucketMinutes;
+		for (AgpBucket b : buckets) {
+			if (b.bucketMinute() == bucketMinute) {
+				return Optional.of(b);
+			}
+		}
+		return Optional.empty();
+	}
+
+	/**
+	 * Estimate where {@code sgv} falls in the bucket's distribution as a 0–100 percentile
+	 * rank. Uses the same five anchor points the bucket exposes (p5, p25, p50, p75, p95)
+	 * and linear-interpolates between them; readings below p5 clamp to 0, above p95 clamp
+	 * to 100.
+	 */
+	public static double percentileRank(AgpBucket bucket, int sgv) {
+		if (bucket == null) {
+			return Double.NaN;
+		}
+		double[] xs = { bucket.p5(), bucket.p25(), bucket.p50(), bucket.p75(), bucket.p95() };
+		double[] ys = { 5, 25, 50, 75, 95 };
+		if (sgv <= xs[0]) {
+			return 0;
+		}
+		if (sgv >= xs[4]) {
+			return 100;
+		}
+		for (int i = 0; i < xs.length - 1; i++) {
+			if (sgv >= xs[i] && sgv <= xs[i + 1]) {
+				double span = xs[i + 1] - xs[i];
+				if (span == 0) {
+					return ys[i];
+				}
+				double t = (sgv - xs[i]) / span;
+				return ys[i] + t * (ys[i + 1] - ys[i]);
+			}
+		}
+		return Double.NaN;
+	}
+
+	@Scheduled(fixedRate = 3600000, initialDelay = 60000)
+	void evictStaleCache() {
+		Instant cutoff = Instant.now().minusMillis(CACHE_TTL_MS * 2);
+		this.cache.entrySet().removeIf(e -> e.getValue().computedAt().isBefore(cutoff));
 	}
 
 	/**

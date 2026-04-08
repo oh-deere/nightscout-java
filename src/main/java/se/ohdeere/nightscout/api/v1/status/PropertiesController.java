@@ -12,9 +12,13 @@ import se.ohdeere.nightscout.plugin.cob.CobPlugin;
 import se.ohdeere.nightscout.plugin.iob.IobPlugin;
 import se.ohdeere.nightscout.plugin.pumploop.PumpLoopPlugin;
 import se.ohdeere.nightscout.service.admin.AdminService;
+import se.ohdeere.nightscout.service.agp.AgpService;
+import se.ohdeere.nightscout.service.agp.AgpService.AgpBucket;
 import se.ohdeere.nightscout.storage.JsonValue;
 import se.ohdeere.nightscout.storage.alarm.AlarmHistoryEntry;
 import se.ohdeere.nightscout.storage.alarm.AlarmHistoryRepository;
+import se.ohdeere.nightscout.storage.entries.Entry;
+import se.ohdeere.nightscout.storage.entries.EntryRepository;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,9 +49,14 @@ class PropertiesController {
 
 	private final AlarmHistoryRepository alarmHistory;
 
+	private final AgpService agpService;
+
+	private final EntryRepository entryRepository;
+
 	PropertiesController(BgNowPlugin bgNowPlugin, IobPlugin iobPlugin, CobPlugin cobPlugin, Ar2Plugin ar2Plugin,
 			ConsumableAgePlugin agePlugin, PumpLoopPlugin pumpLoopPlugin, AlarmEngine alarmEngine,
-			AdminService adminService, AlarmHistoryRepository alarmHistory) {
+			AdminService adminService, AlarmHistoryRepository alarmHistory, AgpService agpService,
+			EntryRepository entryRepository) {
 		this.bgNowPlugin = bgNowPlugin;
 		this.iobPlugin = iobPlugin;
 		this.cobPlugin = cobPlugin;
@@ -57,6 +66,8 @@ class PropertiesController {
 		this.alarmEngine = alarmEngine;
 		this.adminService = adminService;
 		this.alarmHistory = alarmHistory;
+		this.agpService = agpService;
+		this.entryRepository = entryRepository;
 	}
 
 	@GetMapping("/api/v1/alarms/history")
@@ -66,7 +77,8 @@ class PropertiesController {
 	}
 
 	@GetMapping("/api/v1/properties")
-	Map<String, Object> properties() {
+	Map<String, Object> properties(@RequestParam(defaultValue = "0") int offsetMinutes,
+			@RequestParam(defaultValue = "14") int agpDays) {
 		AuthHelper.requirePermission("entries", "read");
 		Map<String, Object> props = new LinkedHashMap<>();
 
@@ -88,6 +100,20 @@ class PropertiesController {
 		java.util.Map<String, java.time.Instant> snoozes = this.alarmEngine.activeSnoozes();
 		if (!snoozes.isEmpty()) {
 			props.put("snoozes", snoozes);
+		}
+
+		// Percentile rank of the current SGV against the matching AGP bucket — gives the
+		// dashboard a "you're at p32 vs typical" readout without a second round trip.
+		Entry current = this.entryRepository.findCurrentByType("sgv");
+		if (current != null && current.sgv() != null) {
+			java.util.List<AgpBucket> buckets = this.agpService.getAgp(agpDays, 15, offsetMinutes);
+			AgpService.bucketAt(buckets, current.dateMs(), 15, offsetMinutes).ifPresent(bucket -> {
+				double rank = AgpService.percentileRank(bucket, current.sgv());
+				if (!Double.isNaN(rank)) {
+					props.put("agpRank", java.util.Map.of("percentile", Math.round(rank), "bucketMinute",
+							bucket.bucketMinute(), "p50", bucket.p50()));
+				}
+			});
 		}
 
 		return props;

@@ -136,6 +136,11 @@ export function BgHeader({ current, previous, settings, properties }: Props) {
             {formatDistanceToNowStrict(current.date, { addSuffix: true })}
           </Typography>
           <Typography variant="body2">{settings.units}</Typography>
+          {properties?.agpRank && (
+            <Typography variant="body2" sx={{ color: 'primary.light' }}>
+              p{properties.agpRank.percentile}
+            </Typography>
+          )}
         </Stack>
       </Stack>
 

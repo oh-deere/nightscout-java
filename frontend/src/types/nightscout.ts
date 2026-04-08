@@ -93,6 +93,7 @@ export interface PluginProperties {
   alarms?: AlarmInfo[]
   snoozes?: Record<string, string>
   pump?: PluginResult
+  agpRank?: { percentile: number; bucketMinute: number; p50: number }
 }
 
 export interface PumpData {
