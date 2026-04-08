@@ -48,4 +48,9 @@ class OAuthConfig {
 		return new OAuth2JwtToNightscoutAuthFilter();
 	}
 
+	@Bean
+	OAuth2LoginToNightscoutAuthFilter oauthLoginBridgeFilter(@Value("${nightscout.oauth.admins:}") String admins) {
+		return new OAuth2LoginToNightscoutAuthFilter(admins);
+	}
+
 }

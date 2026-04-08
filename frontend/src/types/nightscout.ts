@@ -56,6 +56,13 @@ export interface NightscoutStatus {
   boluscalcEnabled: boolean
   runtimeState: string
   settings: NightscoutSettings
+  oauth?: { enabled: boolean; providers: OAuthProvider[] }
+}
+
+export interface OAuthProvider {
+  id: string
+  label: string
+  authorizeUrl: string
 }
 
 export interface Treatment {

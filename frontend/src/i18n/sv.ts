@@ -14,6 +14,8 @@ export const sv: Translation = {
       'Ange Nightscout API-nyckel för att se glukosdata. Nyckeln hashas lokalt och lagras endast i din webbläsare.',
     placeholder: 'API_SECRET',
     save: 'Spara',
+    signInWith: 'Logga in med {{provider}}',
+    orApiSecret: 'eller använd API-nyckeln',
   },
   settings: {
     open: 'Visa inställningar',

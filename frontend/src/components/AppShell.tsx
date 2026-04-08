@@ -8,9 +8,9 @@ import { useTranslation } from 'react-i18next'
 import i18n from '../i18n'
 import { Dashboard } from './Dashboard'
 import { ApiSecretDialog } from './ApiSecretDialog'
-import { useStatus } from '../hooks/useNightscoutData'
+import { useStatus, useVerifyAuth } from '../hooks/useNightscoutData'
 import { ApiError } from '../api/client'
-import { clearApiSecretHash, getApiSecretHash } from '../api/client'
+import { clearApiSecretHash } from '../api/client'
 import { useNotifications } from '../hooks/useNotifications'
 import { SettingsMenu } from './SettingsMenu'
 
@@ -18,6 +18,7 @@ const SUPPORTED_LANGUAGES = ['en', 'sv'] as const
 
 export function AppShell() {
   const status = useStatus()
+  const auth = useVerifyAuth()
   const [authOpen, setAuthOpen] = useState(false)
   const notify = useNotifications()
   const queryClient = useQueryClient()
@@ -32,12 +33,19 @@ export function AppShell() {
   }, [status.data?.settings.language])
 
   useEffect(() => {
-    const hasHash = getApiSecretHash() != null
-    const failed = status.error instanceof ApiError && status.error.status === 401
-    if (!hasHash || failed) {
+    // verifyauth is the canonical signal — works for both api-secret and
+    // OAuth session-cookie auth. Open the dialog only when it's actively
+    // failing or when we've confirmed a 401 from another query.
+    const authOk = auth.data?.status === 200
+    const authFailed = auth.error instanceof ApiError && auth.error.status === 401
+    const statusFailed = status.error instanceof ApiError && status.error.status === 401
+    if (authFailed || statusFailed) {
       setAuthOpen(true)
     }
-  }, [status.error])
+    else if (authOk) {
+      setAuthOpen(false)
+    }
+  }, [auth.data, auth.error, status.error])
 
   const title = status.data?.settings.customTitle ?? t('app.title')
 
@@ -70,6 +78,12 @@ export function AppShell() {
               size="small"
               onClick={() => {
                 clearApiSecretHash()
+                // Tear down the OAuth session too if there is one. Fire-and-forget;
+                // Spring's default /logout clears the session and we don't care about
+                // the redirect response in this SPA.
+                void fetch('/logout', { method: 'POST', credentials: 'same-origin' }).catch(
+                  () => undefined,
+                )
                 queryClient.removeQueries({ queryKey: ['verifyauth'] })
                 setAuthOpen(true)
               }}

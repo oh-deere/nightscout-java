@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { api, getApiSecretHash } from '../api/client'
+import { api } from '../api/client'
 
 const POLL_INTERVAL_MS = 60_000 // 1 minute
 
@@ -29,12 +29,14 @@ export function useTreatments(hours = 6) {
 }
 
 export function useVerifyAuth() {
+  // Run unconditionally so we also catch OAuth session-cookie users (no hash
+  // in localStorage). The endpoint requires authentication so a 401 is the
+  // signal that we need to show the login dialog.
   return useQuery({
     queryKey: ['verifyauth'],
     queryFn: api.verifyAuth,
     staleTime: 5 * 60_000,
     retry: false,
-    enabled: getApiSecretHash() != null,
   })
 }
 
@@ -55,11 +57,14 @@ export function useProperties(agpDays = 14) {
  */
 export function useAgp(days = 14, bucketMinutes = 15) {
   const offsetMinutes = -new Date().getTimezoneOffset()
+  // Skip when not authenticated — verifyauth is the canonical signal and
+  // covers both api-secret and OAuth session flows.
+  const auth = useVerifyAuth()
   return useQuery({
     queryKey: ['agp', days, bucketMinutes, offsetMinutes],
     queryFn: () => api.agp(days, bucketMinutes, offsetMinutes),
     refetchInterval: 5 * 60_000,
     staleTime: 5 * 60_000,
-    enabled: getApiSecretHash() != null,
+    enabled: auth.data?.status === 200,
   })
 }

@@ -10,6 +10,8 @@ import se.ohdeere.nightscout.NightscoutProperties;
 import se.ohdeere.nightscout.service.admin.EffectiveSettings;
 import se.ohdeere.nightscout.service.admin.EffectiveSettings.Thresholds;
 
+import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -20,9 +22,13 @@ class StatusController {
 
 	private final EffectiveSettings effective;
 
-	StatusController(NightscoutProperties properties, EffectiveSettings effective) {
+	private final boolean oauthEnabled;
+
+	StatusController(NightscoutProperties properties, EffectiveSettings effective,
+			@Value("${nightscout.oauth.enabled:false}") boolean oauthEnabled) {
 		this.properties = properties;
 		this.effective = effective;
+		this.oauthEnabled = oauthEnabled;
 	}
 
 	@GetMapping("/api/versions")
@@ -72,6 +78,12 @@ class StatusController {
 		result.put("careportalEnabled", enabledPlugins.contains("careportal"));
 		result.put("boluscalcEnabled", enabledPlugins.contains("boluscalc"));
 		result.put("settings", settings);
+		// Frontend uses this to decide whether to render the "Sign in with OhDeere"
+		// button on the login dialog. Each provider entry is { id, label, authorizeUrl }.
+		if (this.oauthEnabled) {
+			result.put("oauth", Map.of("enabled", true, "providers", List
+				.of(Map.of("id", "ohdeere", "label", "OhDeere", "authorizeUrl", "/oauth2/authorization/ohdeere"))));
+		}
 		return result;
 	}
 

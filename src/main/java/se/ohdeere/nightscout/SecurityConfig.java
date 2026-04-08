@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import se.ohdeere.nightscout.api.auth.NightscoutAuthFilter;
 import se.ohdeere.nightscout.api.auth.OAuth2JwtToNightscoutAuthFilter;
+import se.ohdeere.nightscout.api.auth.OAuth2LoginToNightscoutAuthFilter;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -26,6 +27,9 @@ class SecurityConfig {
 
 	@Autowired(required = false)
 	private OAuth2JwtToNightscoutAuthFilter oauthBridgeFilter;
+
+	@Autowired(required = false)
+	private OAuth2LoginToNightscoutAuthFilter oauthLoginBridgeFilter;
 
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http, NightscoutAuthFilter authFilter) throws Exception {
@@ -51,6 +55,10 @@ class SecurityConfig {
 				.permitAll()
 				// MCP endpoints (Spring AI starter)
 				.requestMatchers("/sse", "/mcp/**")
+				.permitAll()
+				// OAuth2 login redirect + callback endpoints — Spring Security
+				// owns these and they need to be reachable without an existing session.
+				.requestMatchers("/oauth2/authorization/**", "/login/oauth2/code/**")
 				.permitAll()
 				// Admin endpoints require ROLE_ADMIN
 				.requestMatchers("/api/v2/admin/**")
@@ -80,10 +88,18 @@ class SecurityConfig {
 			http.oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
 			// Bridge runs after the OAuth2 BearerTokenAuthenticationFilter populates the
 			// JwtAuthenticationToken but before the AuthorizationFilter checks
-			// permissions,
-			// so the controller sees a NightscoutAuth principal when the controller's
-			// AuthHelper.requirePermission runs.
+			// permissions, so the controller sees a NightscoutAuth principal when the
+			// controller's AuthHelper.requirePermission runs.
 			Optional.ofNullable(this.oauthBridgeFilter)
+				.ifPresent(filter -> http.addFilterBefore(filter, AuthorizationFilter.class));
+
+			// Browser login flow. Spring Security handles the redirect, the code
+			// exchange, and stores the principal in the HttpSession. After
+			// successful login the user lands at "/" (the SPA root) and the bridge
+			// filter below converts the OAuth2AuthenticationToken into a NightscoutAuth
+			// so AuthHelper.requirePermission keeps working unchanged.
+			http.oauth2Login(oauth -> oauth.defaultSuccessUrl("/", true));
+			Optional.ofNullable(this.oauthLoginBridgeFilter)
 				.ifPresent(filter -> http.addFilterBefore(filter, AuthorizationFilter.class));
 		}
 

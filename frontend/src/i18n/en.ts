@@ -12,6 +12,8 @@ export const en = {
       'Enter the Nightscout API secret to view glucose data. The secret is hashed locally and stored in your browser only.',
     placeholder: 'API_SECRET',
     save: 'Save',
+    signInWith: 'Sign in with {{provider}}',
+    orApiSecret: 'or use the API secret',
   },
   settings: {
     open: 'View settings',
