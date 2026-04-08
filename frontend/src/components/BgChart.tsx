@@ -3,12 +3,13 @@ import { Group } from '@visx/group'
 import { scaleLinear, scaleTime } from '@visx/scale'
 import { AxisBottom, AxisLeft } from '@visx/axis'
 import { GridRows } from '@visx/grid'
-import { Circle, Bar, Line, LinePath } from '@visx/shape'
+import { Area, Circle, Bar, Line, LinePath } from '@visx/shape'
 import { ParentSize } from '@visx/responsive'
 import { curveLinear, curveMonotoneX, curveCatmullRom, curveBasis } from '@visx/curve'
 import { localPoint } from '@visx/event'
 import { useTooltip, TooltipWithBounds, defaultStyles } from '@visx/tooltip'
 import { bisector } from 'd3-array'
+import type { AgpBucket } from '../api/client'
 import type { Entry, NightscoutSettings, Treatment } from '../types/nightscout'
 import { bgColor } from '../theme/theme'
 import { DIRECTION_ARROW, formatBg } from '../utils/units'
@@ -21,6 +22,55 @@ interface Props {
   showLine?: boolean
   /** 0=raw, 1=monotone (default), 2=catmull-rom, 3=basis (heavy) */
   smoothing?: number
+  /** AGP percentile bands. When present and non-empty the overlay renders behind the trace. */
+  agpBuckets?: AgpBucket[]
+}
+
+/** One sample of the AGP overlay at a real chart timestamp. */
+interface AgpSample {
+  date: number
+  p5: number
+  p25: number
+  p50: number
+  p75: number
+  p95: number
+}
+
+/**
+ * Project AGP buckets (which are indexed by time-of-day in the local tz) onto the
+ * chart's actual timestamp axis. We sample every 5 minutes inside the visible window
+ * since the underlying SGV cadence is 5 min — that's smooth enough for the bands and
+ * cheap to render.
+ */
+function projectAgp(
+  buckets: AgpBucket[] | undefined,
+  fromMs: number,
+  toMs: number,
+  bucketMinutes: number,
+): AgpSample[] {
+  if (!buckets || buckets.length === 0) return []
+  const byBucket = new Map<number, AgpBucket>()
+  for (const b of buckets) byBucket.set(b.bucketMinute, b)
+
+  const tzOffsetMinutes = -new Date().getTimezoneOffset()
+  const stepMs = 5 * 60_000
+  const samples: AgpSample[] = []
+  for (let t = Math.ceil(fromMs / stepMs) * stepMs; t <= toMs; t += stepMs) {
+    const localMinuteOfDay = (((t / 60_000 + tzOffsetMinutes) % 1440) + 1440) % 1440
+    const bucketMinute = Math.floor(localMinuteOfDay / bucketMinutes) * bucketMinutes
+    const b = byBucket.get(bucketMinute)
+    if (b) {
+      samples.push({
+        date: t,
+        p5: b.p5,
+        p25: b.p25,
+        p50: b.p50,
+        p75: b.p75,
+        p95: b.p95,
+      })
+    }
+  }
+  return samples
 }
 
 function curveForLevel(level: number) {
@@ -88,6 +138,7 @@ function BgChartInner({
   hours,
   showLine = true,
   smoothing = 1,
+  agpBuckets,
 }: InnerProps) {
   const margin = { top: 16, right: 20, bottom: 36, left: 44 }
   const innerWidth = Math.max(0, width - margin.left - margin.right)
@@ -113,7 +164,10 @@ function BgChartInner({
   }, [sgvs, smoothing])
   const lineCurve = curveForLevel(smoothing)
 
-  const maxSgv = Math.max(settings.thresholds.bgHigh, ...sgvs.map((e) => e.sgv ?? 0))
+  const agpSamples = useMemo(() => projectAgp(agpBuckets, xMin, now, 15), [agpBuckets, xMin, now])
+
+  const maxAgp = agpSamples.length > 0 ? Math.max(...agpSamples.map((s) => s.p95)) : 0
+  const maxSgv = Math.max(settings.thresholds.bgHigh, ...sgvs.map((e) => e.sgv ?? 0), maxAgp)
   const yMaxMgdl = Math.ceil((maxSgv + 20) / 10) * 10
   const yMinMgdl = 40
 
@@ -196,6 +250,40 @@ function BgChartInner({
             fill="#4caf50"
             fillOpacity={0.1}
           />
+
+          {/* AGP percentile bands (faded "typical you" backdrop) */}
+          {agpSamples.length > 1 && (
+            <>
+              <Area<AgpSample>
+                data={agpSamples}
+                x={(d) => xScale(d.date)}
+                y0={(d) => toY(d.p5)}
+                y1={(d) => toY(d.p95)}
+                curve={curveMonotoneX}
+                fill="#90caf9"
+                fillOpacity={0.1}
+              />
+              <Area<AgpSample>
+                data={agpSamples}
+                x={(d) => xScale(d.date)}
+                y0={(d) => toY(d.p25)}
+                y1={(d) => toY(d.p75)}
+                curve={curveMonotoneX}
+                fill="#90caf9"
+                fillOpacity={0.18}
+              />
+              <LinePath<AgpSample>
+                data={agpSamples}
+                x={(d) => xScale(d.date)}
+                y={(d) => toY(d.p50)}
+                stroke="#90caf9"
+                strokeWidth={1.5}
+                strokeDasharray="3,3"
+                strokeOpacity={0.6}
+                curve={curveMonotoneX}
+              />
+            </>
+          )}
 
           {/* Threshold guide lines */}
           <Line

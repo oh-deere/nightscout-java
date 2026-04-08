@@ -69,6 +69,16 @@ export interface AdminSetting {
   updatedBy: string
 }
 
+export interface AgpBucket {
+  bucketMinute: number
+  p5: number
+  p25: number
+  p50: number
+  p75: number
+  p95: number
+  count: number
+}
+
 export interface AlarmHistoryEntry {
   id: string
   occurredAt: string
@@ -114,6 +124,10 @@ export const api = {
   properties: () => request<PluginProperties>('/api/v1/properties'),
   alarmHistory: (limit = 50) =>
     request<AlarmHistoryEntry[]>(`/api/v1/alarms/history?limit=${limit}`),
+  agp: (days = 14, bucketMinutes = 15, offsetMinutes = 0) =>
+    request<AgpBucket[]>(
+      `/api/v1/agp?days=${days}&bucketMinutes=${bucketMinutes}&offsetMinutes=${offsetMinutes}`,
+    ),
   verifyAuth: () =>
     request<{
       message: string

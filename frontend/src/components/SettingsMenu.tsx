@@ -129,6 +129,33 @@ export function SettingsMenu() {
               </Stack>
             </Section>
 
+            <Divider />
+
+            <Section label={t('settings.sections.agp')}>
+              <Stack direction="row" alignItems="center" justifyContent="space-between">
+                <Typography variant="body2">{t('settings.agp.show')}</Typography>
+                <Switch
+                  size="small"
+                  checked={settings.showAgp}
+                  onChange={(e) => settings.setShowAgp(e.target.checked)}
+                />
+              </Stack>
+              <Stack sx={{ opacity: settings.showAgp ? 1 : 0.4 }}>
+                <ButtonGroup size="small" variant="outlined" fullWidth>
+                  {[7, 14, 30].map((d) => (
+                    <Button
+                      key={d}
+                      variant={d === settings.agpDays ? 'contained' : 'outlined'}
+                      onClick={() => settings.setAgpDays(d)}
+                      disabled={!settings.showAgp}
+                    >
+                      {t('settings.agp.days', { count: d })}
+                    </Button>
+                  ))}
+                </ButtonGroup>
+              </Stack>
+            </Section>
+
             {isAdmin && (
               <>
                 <Divider />

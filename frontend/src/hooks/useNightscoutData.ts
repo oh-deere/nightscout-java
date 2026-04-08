@@ -45,3 +45,20 @@ export function useProperties() {
     refetchInterval: POLL_INTERVAL_MS,
   })
 }
+
+/**
+ * Ambulatory Glucose Profile bands. Re-fetches every five minutes since the
+ * underlying SGV cadence is 5 min and the trailing window changes slowly.
+ * The browser's UTC offset is forwarded so the buckets land on the user's
+ * local clock without any backend tz config.
+ */
+export function useAgp(days = 14, bucketMinutes = 15) {
+  const offsetMinutes = -new Date().getTimezoneOffset()
+  return useQuery({
+    queryKey: ['agp', days, bucketMinutes, offsetMinutes],
+    queryFn: () => api.agp(days, bucketMinutes, offsetMinutes),
+    refetchInterval: 5 * 60_000,
+    staleTime: 5 * 60_000,
+    enabled: getApiSecretHash() != null,
+  })
+}

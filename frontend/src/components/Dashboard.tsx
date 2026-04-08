@@ -9,6 +9,7 @@ import { SensorCard } from './SensorCard'
 import { AlarmBanner } from './AlarmBanner'
 import { PumpCard } from './PumpCard'
 import {
+  useAgp,
   useEntries,
   useProperties,
   useStatus,
@@ -29,6 +30,7 @@ export function Dashboard({ notificationsEnabled }: Props) {
   const entries = useEntries(view.chartHours)
   const treatments = useTreatments(view.chartHours)
   const properties = useProperties()
+  const agp = useAgp(view.agpDays)
 
   const sortedEntries = useMemo(
     () => (entries.data ?? []).slice().sort((a, b) => b.date - a.date),
@@ -83,6 +85,7 @@ export function Dashboard({ notificationsEnabled }: Props) {
           hours={view.chartHours}
           showLine={view.showLine}
           smoothing={view.smoothing}
+          agpBuckets={view.showAgp ? agp.data : undefined}
         />
       </Box>
       <PumpCard properties={properties.data} />

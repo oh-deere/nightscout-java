@@ -20,6 +20,7 @@ export const en = {
       tirWindow: 'Time in Range window',
       ranges: 'Glucose ranges (mg/dL)',
       chartLine: 'Chart line',
+      agp: 'Typical-day overlay',
     },
     ranges: {
       urgentHigh: 'Urgent high',
@@ -35,6 +36,10 @@ export const en = {
       light: 'Light',
       medium: 'Medium',
       heavy: 'Heavy',
+    },
+    agp: {
+      show: 'Show typical range',
+      days: '{{count}}d',
     },
     adminButton: 'User & runtime admin',
   },

@@ -22,6 +22,7 @@ export const sv: Translation = {
       tirWindow: 'Tidsfönster för Tid i Mål',
       ranges: 'Glukosområden (mg/dL)',
       chartLine: 'Linje i grafen',
+      agp: 'Typisk dag-överlägg',
     },
     ranges: {
       urgentHigh: 'Akut hög',
@@ -37,6 +38,10 @@ export const sv: Translation = {
       light: 'Lätt',
       medium: 'Medel',
       heavy: 'Hård',
+    },
+    agp: {
+      show: 'Visa typiskt intervall',
+      days: '{{count}}d',
     },
     adminButton: 'Användar- och drift­administration',
   },

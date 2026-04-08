@@ -26,11 +26,15 @@ interface ViewSettings {
   ranges: BgRanges
   showLine: boolean
   smoothing: number // 0..3 — 0=none, 3=very smooth
+  showAgp: boolean
+  agpDays: number // 7 / 14 / 30
   setChartHours: (h: ChartHours) => void
   setTirHours: (h: TirHours) => void
   setRanges: (r: BgRanges) => void
   setShowLine: (b: boolean) => void
   setSmoothing: (n: number) => void
+  setShowAgp: (b: boolean) => void
+  setAgpDays: (n: number) => void
   resetRanges: () => void
 }
 
@@ -42,6 +46,8 @@ interface Stored {
   ranges: BgRanges
   showLine: boolean
   smoothing: number
+  showAgp: boolean
+  agpDays: number
 }
 
 function load(): Stored {
@@ -55,6 +61,8 @@ function load(): Stored {
         ranges: { ...DEFAULT_RANGES, ...(parsed.ranges ?? {}) },
         showLine: parsed.showLine ?? true,
         smoothing: parsed.smoothing ?? 1,
+        showAgp: parsed.showAgp ?? false,
+        agpDays: parsed.agpDays ?? 14,
       }
     }
   } catch {
@@ -66,6 +74,8 @@ function load(): Stored {
     ranges: DEFAULT_RANGES,
     showLine: true,
     smoothing: 1,
+    showAgp: false,
+    agpDays: 14,
   }
 }
 
@@ -84,6 +94,8 @@ export function ViewSettingsProvider({ children }: { children: ReactNode }) {
   const [ranges, setRangesState] = useState<BgRanges>(initial.ranges)
   const [showLine, setShowLineState] = useState<boolean>(initial.showLine)
   const [smoothing, setSmoothingState] = useState<number>(initial.smoothing)
+  const [showAgp, setShowAgpState] = useState<boolean>(initial.showAgp)
+  const [agpDays, setAgpDaysState] = useState<number>(initial.agpDays)
 
   const persist = (next: Partial<Stored>) => {
     save({
@@ -92,6 +104,8 @@ export function ViewSettingsProvider({ children }: { children: ReactNode }) {
       ranges,
       showLine,
       smoothing,
+      showAgp,
+      agpDays,
       ...next,
     })
   }
@@ -116,6 +130,14 @@ export function ViewSettingsProvider({ children }: { children: ReactNode }) {
     setSmoothingState(n)
     persist({ smoothing: n })
   }
+  const setShowAgp = (b: boolean) => {
+    setShowAgpState(b)
+    persist({ showAgp: b })
+  }
+  const setAgpDays = (n: number) => {
+    setAgpDaysState(n)
+    persist({ agpDays: n })
+  }
   const resetRanges = () => setRanges(DEFAULT_RANGES)
 
   return createElement(
@@ -127,11 +149,15 @@ export function ViewSettingsProvider({ children }: { children: ReactNode }) {
         ranges,
         showLine,
         smoothing,
+        showAgp,
+        agpDays,
         setChartHours,
         setTirHours,
         setRanges,
         setShowLine,
         setSmoothing,
+        setShowAgp,
+        setAgpDays,
         resetRanges,
       },
     },
