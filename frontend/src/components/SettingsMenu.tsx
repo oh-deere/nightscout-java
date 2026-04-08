@@ -276,16 +276,20 @@ function RangeRow({
         type="number"
         value={displayValue}
         onChange={onChange}
-        sx={{ width: 120 }}
+        sx={{ width: 150 }}
         slotProps={{
           input: {
-            endAdornment: <InputAdornment position="end">{unitLabel}</InputAdornment>,
+            endAdornment: (
+              <InputAdornment position="end" sx={{ '& p': { fontSize: 11 } }}>
+                {unitLabel}
+              </InputAdornment>
+            ),
           },
           htmlInput: {
             min: isMmol ? 1.7 : 30,
             max: isMmol ? 33 : 600,
             step: isMmol ? 0.1 : 1,
-            style: { textAlign: 'right' },
+            style: { textAlign: 'right', paddingRight: 4 },
           },
         }}
       />
