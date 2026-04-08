@@ -6,8 +6,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import se.ohdeere.nightscout.NightscoutProperties;
 import se.ohdeere.nightscout.plugin.PluginResult;
+import se.ohdeere.nightscout.service.admin.EffectiveSettings;
+import se.ohdeere.nightscout.service.admin.EffectiveSettings.Thresholds;
 import se.ohdeere.nightscout.storage.entries.Entry;
 import se.ohdeere.nightscout.storage.entries.EntryRepository;
 
@@ -18,11 +19,11 @@ public class BgNowPlugin {
 
 	private final EntryRepository entryRepository;
 
-	private final NightscoutProperties properties;
+	private final EffectiveSettings effective;
 
-	public BgNowPlugin(EntryRepository entryRepository, NightscoutProperties properties) {
+	public BgNowPlugin(EntryRepository entryRepository, EffectiveSettings effective) {
 		this.entryRepository = entryRepository;
-		this.properties = properties;
+		this.effective = effective;
 	}
 
 	public Optional<PluginResult> calculate() {
@@ -56,32 +57,32 @@ public class BgNowPlugin {
 	}
 
 	private String classifyLevel(int sgv, long ageMins) {
-		if (ageMins > this.properties.alarmTimeagoUrgentMins()) {
+		if (ageMins > this.effective.alarmTimeagoUrgentMins()) {
 			return "urgent";
 		}
-		if (ageMins > this.properties.alarmTimeagoWarnMins()) {
+		if (ageMins > this.effective.alarmTimeagoWarnMins()) {
 			return "warn";
 		}
-		if (sgv > this.properties.thresholds().bgHigh() || sgv < this.properties.thresholds().bgLow()) {
+		Thresholds t = this.effective.thresholds();
+		if (sgv > t.bgHigh() || sgv < t.bgLow()) {
 			return "urgent";
 		}
-		if (sgv > this.properties.thresholds().bgTargetTop() || sgv < this.properties.thresholds().bgTargetBottom()) {
+		if (sgv > t.bgTargetTop() || sgv < t.bgTargetBottom()) {
 			return "warn";
 		}
 		return "ok";
 	}
 
 	private String formatBg(int mgdl) {
-		double display = this.properties.toDisplayUnits(mgdl);
-		if ("mmol/l".equalsIgnoreCase(this.properties.units()) || "mmol".equalsIgnoreCase(this.properties.units())) {
-			return String.valueOf(display);
+		if (this.effective.isMmol()) {
+			return String.valueOf(this.effective.toDisplayUnits(mgdl));
 		}
-		return String.valueOf((int) display);
+		return String.valueOf(mgdl);
 	}
 
 	private String formatDelta(int deltaMgdl) {
 		String prefix = (deltaMgdl > 0) ? "+" : "";
-		if ("mmol/l".equalsIgnoreCase(this.properties.units()) || "mmol".equalsIgnoreCase(this.properties.units())) {
+		if (this.effective.isMmol()) {
 			double mmol = Math.round(deltaMgdl / 18.0 * 10.0) / 10.0;
 			return prefix + mmol;
 		}

@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 import se.ohdeere.nightscout.NightscoutProperties;
-import se.ohdeere.nightscout.NightscoutProperties.Thresholds;
 import se.ohdeere.nightscout.service.admin.EffectiveSettings;
+import se.ohdeere.nightscout.service.admin.EffectiveSettings.Thresholds;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,15 +47,15 @@ class StatusController {
 		Map<String, Object> settings = new LinkedHashMap<>();
 		Thresholds thresholds = this.effective.thresholds();
 		settings.put("units", this.effective.units());
-		settings.put("timeFormat", this.properties.timeFormat());
-		settings.put("nightMode", this.properties.nightMode());
-		settings.put("theme", this.properties.theme());
-		settings.put("language", this.properties.language());
+		settings.put("timeFormat", this.effective.timeFormat());
+		settings.put("nightMode", this.effective.nightMode());
+		settings.put("theme", this.effective.theme());
+		settings.put("language", this.effective.language());
 		settings.put("showPlugins", this.properties.showPlugins());
 		settings.put("enable", enabledPlugins);
-		settings.put("alarmTypes", List.of(this.properties.alarmTypes()));
+		settings.put("alarmTypes", List.of(this.effective.alarmTypes()));
 		settings.put("customTitle", this.effective.customTitle());
-		settings.put("authDefaultRoles", this.properties.authDefaultRoles());
+		settings.put("authDefaultRoles", this.effective.authDefaultRoles());
 		settings.put("alarmTimeagoWarnMins", this.effective.alarmTimeagoWarnMins());
 		settings.put("alarmTimeagoUrgentMins", this.effective.alarmTimeagoUrgentMins());
 		settings.put("thresholds", Map.of("bgHigh", thresholds.bgHigh(), "bgTargetTop", thresholds.bgTargetTop(),

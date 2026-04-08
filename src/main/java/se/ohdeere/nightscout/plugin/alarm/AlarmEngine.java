@@ -11,10 +11,10 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import se.ohdeere.nightscout.NightscoutProperties.Thresholds;
 import se.ohdeere.nightscout.plugin.PluginResult;
 import se.ohdeere.nightscout.plugin.ar2.Ar2Plugin;
 import se.ohdeere.nightscout.service.admin.EffectiveSettings;
+import se.ohdeere.nightscout.service.admin.EffectiveSettings.Thresholds;
 import se.ohdeere.nightscout.storage.alarm.AlarmHistoryEntry;
 import se.ohdeere.nightscout.storage.alarm.AlarmHistoryRepository;
 import se.ohdeere.nightscout.storage.alarm.AlarmSnooze;

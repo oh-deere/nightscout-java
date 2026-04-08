@@ -2,26 +2,20 @@ package se.ohdeere.nightscout;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+/**
+ * Bootstrap-only configuration. Everything that an admin can change at runtime lives in
+ * the {@code runtime_settings} table and is read through
+ * {@link se.ohdeere.nightscout.service.admin.EffectiveSettings}.
+ *
+ * <p>
+ * Only three fields remain here:
+ * <ul>
+ * <li>{@code apiSecret} — bootstrap admin credential, must exist before any authenticated
+ * request can land</li>
+ * <li>{@code enable} / {@code showPlugins} — plugin gating that affects which beans the
+ * application exposes; needs to be known at startup, not at request time</li>
+ * </ul>
+ */
 @ConfigurationProperties(prefix = "nightscout")
-public record NightscoutProperties(String apiSecret, String units, int timeFormat, String theme, String language,
-		String enable, String showPlugins, String customTitle, String alarmTypes, String authDefaultRoles,
-		boolean nightMode, boolean devicestatusAdvanced, int bolusRenderOver, Thresholds thresholds,
-		int alarmTimeagoWarnMins, int alarmTimeagoUrgentMins, Sage sage) {
-
-	public record Thresholds(int bgHigh, int bgTargetTop, int bgTargetBottom, int bgLow) {
-	}
-
-	public record Sage(int info, int warn, int urgent) {
-	}
-
-	/**
-	 * Convert mg/dL to display units (mg/dl or mmol/l).
-	 */
-	public double toDisplayUnits(int mgdl) {
-		if ("mmol/l".equalsIgnoreCase(this.units) || "mmol".equalsIgnoreCase(this.units)) {
-			return Math.round(mgdl / 18.0 * 10.0) / 10.0;
-		}
-		return mgdl;
-	}
-
+public record NightscoutProperties(String apiSecret, String enable, String showPlugins) {
 }

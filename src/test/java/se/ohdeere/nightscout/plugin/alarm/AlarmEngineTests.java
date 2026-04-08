@@ -12,7 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
-import se.ohdeere.nightscout.NightscoutProperties.Thresholds;
+import se.ohdeere.nightscout.service.admin.EffectiveSettings.Thresholds;
 import se.ohdeere.nightscout.plugin.PluginResult;
 import se.ohdeere.nightscout.plugin.ar2.Ar2Plugin;
 import se.ohdeere.nightscout.service.admin.EffectiveSettings;

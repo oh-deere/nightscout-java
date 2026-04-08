@@ -5,8 +5,9 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
-import se.ohdeere.nightscout.NightscoutProperties;
 import se.ohdeere.nightscout.plugin.PluginResult;
+import se.ohdeere.nightscout.service.admin.EffectiveSettings;
+import se.ohdeere.nightscout.service.admin.EffectiveSettings.Sage;
 import se.ohdeere.nightscout.storage.treatments.Treatment;
 import se.ohdeere.nightscout.storage.treatments.TreatmentRepository;
 
@@ -20,11 +21,11 @@ public class ConsumableAgePlugin {
 
 	private final TreatmentRepository treatmentRepository;
 
-	private final NightscoutProperties properties;
+	private final EffectiveSettings effective;
 
-	public ConsumableAgePlugin(TreatmentRepository treatmentRepository, NightscoutProperties properties) {
+	public ConsumableAgePlugin(TreatmentRepository treatmentRepository, EffectiveSettings effective) {
 		this.treatmentRepository = treatmentRepository;
-		this.properties = properties;
+		this.effective = effective;
 	}
 
 	public Optional<PluginResult> cage() {
@@ -32,9 +33,8 @@ public class ConsumableAgePlugin {
 	}
 
 	public Optional<PluginResult> sage() {
-		int warnHours = this.properties.sage().warn();
-		int urgentHours = this.properties.sage().urgent();
-		return calculateAge("sage", "SAGE", "Sensor Start", this.properties.sage().info(), warnHours, urgentHours);
+		Sage s = this.effective.sage();
+		return calculateAge("sage", "SAGE", "Sensor Start", s.info(), s.warn(), s.urgent());
 	}
 
 	public Optional<PluginResult> iage() {

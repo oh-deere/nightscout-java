@@ -13,7 +13,8 @@ import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Service;
 
-import se.ohdeere.nightscout.NightscoutProperties;
+import se.ohdeere.nightscout.service.admin.EffectiveSettings;
+import se.ohdeere.nightscout.service.admin.EffectiveSettings.Thresholds;
 import se.ohdeere.nightscout.plugin.PluginResult;
 import se.ohdeere.nightscout.plugin.ages.ConsumableAgePlugin;
 import se.ohdeere.nightscout.plugin.bgnow.BgNowPlugin;
@@ -47,18 +48,18 @@ public class NightscoutMcpTools {
 
 	private final ConsumableAgePlugin agePlugin;
 
-	private final NightscoutProperties properties;
+	private final EffectiveSettings effective;
 
 	public NightscoutMcpTools(EntryService entryService, TreatmentRepository treatmentRepository,
 			BgNowPlugin bgNowPlugin, IobPlugin iobPlugin, CobPlugin cobPlugin, ConsumableAgePlugin agePlugin,
-			NightscoutProperties properties) {
+			EffectiveSettings effective) {
 		this.entryService = entryService;
 		this.treatmentRepository = treatmentRepository;
 		this.bgNowPlugin = bgNowPlugin;
 		this.iobPlugin = iobPlugin;
 		this.cobPlugin = cobPlugin;
 		this.agePlugin = agePlugin;
-		this.properties = properties;
+		this.effective = effective;
 	}
 
 	@McpTool(description = "Get the most recent glucose (SGV) reading from the continuous glucose monitor. "
@@ -161,16 +162,16 @@ public class NightscoutMcpTools {
 				max = v;
 				maxTs = e.dateMs();
 			}
-			if (v <= this.properties.thresholds().bgLow()) {
+			if (v <= this.effective.thresholds().bgLow()) {
 				urgentLow++;
 			}
-			else if (v < this.properties.thresholds().bgTargetBottom()) {
+			else if (v < this.effective.thresholds().bgTargetBottom()) {
 				low++;
 			}
-			else if (v > this.properties.thresholds().bgHigh()) {
+			else if (v > this.effective.thresholds().bgHigh()) {
 				urgentHigh++;
 			}
-			else if (v > this.properties.thresholds().bgTargetTop()) {
+			else if (v > this.effective.thresholds().bgTargetTop()) {
 				high++;
 			}
 			else {
@@ -201,7 +202,7 @@ public class NightscoutMcpTools {
 				  Urgent high: %.1f%%
 				""".formatted(formatInstant(fromInstant), formatInstant(toInstant), n, mean, mean / MGDL_TO_MMOL, sd,
 				cv, min, min / MGDL_TO_MMOL, formatInstant(minTs), max, max / MGDL_TO_MMOL, formatInstant(maxTs), a1c,
-				this.properties.thresholds().bgTargetBottom(), this.properties.thresholds().bgTargetTop(),
+				this.effective.thresholds().bgTargetBottom(), this.effective.thresholds().bgTargetTop(),
 				pct(inRange, n), pct(low, n), pct(urgentLow, n), pct(high, n), pct(urgentHigh, n));
 	}
 
@@ -263,16 +264,16 @@ public class NightscoutMcpTools {
 	}
 
 	private String classify(int sgv) {
-		if (sgv >= this.properties.thresholds().bgHigh()) {
+		if (sgv >= this.effective.thresholds().bgHigh()) {
 			return "urgent high";
 		}
-		if (sgv > this.properties.thresholds().bgTargetTop()) {
+		if (sgv > this.effective.thresholds().bgTargetTop()) {
 			return "high";
 		}
-		if (sgv <= this.properties.thresholds().bgLow()) {
+		if (sgv <= this.effective.thresholds().bgLow()) {
 			return "urgent low";
 		}
-		if (sgv < this.properties.thresholds().bgTargetBottom()) {
+		if (sgv < this.effective.thresholds().bgTargetBottom()) {
 			return "low";
 		}
 		return "in range";

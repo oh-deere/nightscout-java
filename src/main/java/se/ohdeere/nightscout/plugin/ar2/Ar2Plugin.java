@@ -5,8 +5,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import se.ohdeere.nightscout.NightscoutProperties;
 import se.ohdeere.nightscout.plugin.PluginResult;
+import se.ohdeere.nightscout.service.admin.EffectiveSettings;
+import se.ohdeere.nightscout.service.admin.EffectiveSettings.Thresholds;
 import se.ohdeere.nightscout.storage.entries.Entry;
 import se.ohdeere.nightscout.storage.entries.EntryRepository;
 
@@ -25,11 +26,11 @@ public class Ar2Plugin {
 
 	private final EntryRepository entryRepository;
 
-	private final NightscoutProperties properties;
+	private final EffectiveSettings effective;
 
-	public Ar2Plugin(EntryRepository entryRepository, NightscoutProperties properties) {
+	public Ar2Plugin(EntryRepository entryRepository, EffectiveSettings effective) {
 		this.entryRepository = entryRepository;
-		this.properties = properties;
+		this.effective = effective;
 	}
 
 	public Optional<PluginResult> calculate() {
@@ -43,14 +44,14 @@ public class Ar2Plugin {
 
 		List<Double> forecast = predict(previous, current);
 
+		Thresholds t = this.effective.thresholds();
 		String level = "ok";
 		for (double predicted : forecast) {
-			if (predicted > this.properties.thresholds().bgHigh() || predicted < this.properties.thresholds().bgLow()) {
+			if (predicted > t.bgHigh() || predicted < t.bgLow()) {
 				level = "urgent";
 				break;
 			}
-			if (predicted > this.properties.thresholds().bgTargetTop()
-					|| predicted < this.properties.thresholds().bgTargetBottom()) {
+			if (predicted > t.bgTargetTop() || predicted < t.bgTargetBottom()) {
 				level = "warn";
 			}
 		}
