@@ -92,6 +92,25 @@ export interface PluginProperties {
   alarm?: AlarmInfo
   alarms?: AlarmInfo[]
   snoozes?: Record<string, string>
+  pump?: PluginResult
+}
+
+export interface PumpData {
+  source?: 'loop' | 'openaps'
+  pumpReservoir?: number
+  pumpManufacturer?: string
+  pumpModel?: string
+  pumpBatteryPercent?: number
+  pumpBatteryVoltage?: number
+  loopName?: string
+  loopVersion?: string
+  loopIob?: number
+  loopCob?: number
+  openapsReason?: string
+  openapsEventualBg?: number
+  loopTimestamp?: string
+  loopAgeMinutes?: number
+  loopStale?: boolean
 }
 
 export interface AlarmInfo {

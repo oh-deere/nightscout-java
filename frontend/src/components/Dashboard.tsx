@@ -6,6 +6,7 @@ import { PluginPills } from './PluginPills'
 import { TimeInRange } from './TimeInRange'
 import { SensorCard } from './SensorCard'
 import { AlarmBanner } from './AlarmBanner'
+import { PumpCard } from './PumpCard'
 import {
   useEntries,
   useProperties,
@@ -82,6 +83,7 @@ export function Dashboard({ notificationsEnabled }: Props) {
           smoothing={view.smoothing}
         />
       </Box>
+      <PumpCard properties={properties.data} />
       <SensorCard properties={properties.data} />
       <TimeInRange settings={effective} />
     </Stack>

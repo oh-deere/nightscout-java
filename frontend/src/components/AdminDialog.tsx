@@ -33,9 +33,10 @@ import {
   type AdminApiKeyCreated,
   type AdminAuditEntry,
   type AdminSetting,
+  type AlarmHistoryEntry,
 } from '../api/client'
 
-type TabValue = 'keys' | 'settings' | 'audit'
+type TabValue = 'keys' | 'settings' | 'alarms' | 'audit'
 
 export function AdminDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [tab, setTab] = useState<TabValue>('keys')
@@ -53,11 +54,13 @@ export function AdminDialog({ open, onClose }: { open: boolean; onClose: () => v
       <Tabs value={tab} onChange={(_, v) => setTab(v as TabValue)} sx={{ px: 3 }}>
         <Tab value="keys" label="API keys" />
         <Tab value="settings" label="Runtime settings" />
+        <Tab value="alarms" label="Alarm history" />
         <Tab value="audit" label="Audit log" />
       </Tabs>
       <DialogContent dividers sx={{ minHeight: 360 }}>
         {tab === 'keys' && <KeysTab />}
         {tab === 'settings' && <SettingsTab />}
+        {tab === 'alarms' && <AlarmHistoryTab />}
         {tab === 'audit' && <AuditTab />}
       </DialogContent>
     </Dialog>
@@ -353,6 +356,62 @@ function SettingsTab() {
         </TableContainer>
       )}
     </Stack>
+  )
+}
+
+/* ---------- Alarm history ---------- */
+
+function AlarmHistoryTab() {
+  const history = useQuery({ queryKey: ['admin', 'alarms'], queryFn: () => api.alarmHistory(100) })
+
+  return (
+    <Box>
+      {history.isLoading && <CircularProgress size={24} />}
+      {history.error && <Alert severity="error">Failed to load alarm history</Alert>}
+      {history.data && (
+        <TableContainer>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>When</TableCell>
+                <TableCell>Type</TableCell>
+                <TableCell>Level</TableCell>
+                <TableCell>Title</TableCell>
+                <TableCell>Message</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {history.data.map((e: AlarmHistoryEntry) => (
+                <TableRow key={e.id}>
+                  <TableCell>{formatDate(e.occurredAt)}</TableCell>
+                  <TableCell>
+                    <Chip size="small" label={e.type} />
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      size="small"
+                      color={e.level >= 3 ? 'error' : 'warning'}
+                      label={e.level >= 3 ? 'urgent' : 'warn'}
+                    />
+                  </TableCell>
+                  <TableCell>{e.title}</TableCell>
+                  <TableCell sx={{ color: 'text.secondary' }}>{e.message ?? ''}</TableCell>
+                </TableRow>
+              ))}
+              {history.data.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5}>
+                    <Typography variant="body2" color="text.secondary" textAlign="center">
+                      No alarms recorded yet
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+    </Box>
   )
 }
 

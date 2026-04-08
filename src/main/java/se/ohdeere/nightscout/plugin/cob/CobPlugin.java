@@ -38,9 +38,7 @@ public class CobPlugin {
 		for (Treatment t : treatments) {
 			if (t.carbs() != null && t.carbs() > 0) {
 				double minutesAgo = Duration.between(t.createdAt(), Instant.now()).toMinutes();
-				double absorbed = (minutesAgo / 60.0) * DEFAULT_CARBS_HR;
-				double remaining = Math.max(0, t.carbs() - absorbed);
-				totalCob += remaining;
+				totalCob += cobRemaining(t.carbs(), minutesAgo, DEFAULT_CARBS_HR);
 			}
 		}
 
@@ -48,6 +46,18 @@ public class CobPlugin {
 		String display = displayCob + "g";
 		return Optional
 			.of(PluginResult.withData("cob", "COB", display, Map.of("cob", totalCob, "displayCob", displayCob)));
+	}
+
+	/**
+	 * Linear carb absorption: every minute, {@code carbsPerHr / 60} grams are absorbed.
+	 * Result is clamped to zero once the meal is fully absorbed (or in the future).
+	 */
+	static double cobRemaining(double carbs, double minutesAgo, double carbsPerHr) {
+		if (minutesAgo < 0) {
+			return carbs;
+		}
+		double absorbed = (minutesAgo / 60.0) * carbsPerHr;
+		return Math.max(0, carbs - absorbed);
 	}
 
 }

@@ -69,6 +69,15 @@ export interface AdminSetting {
   updatedBy: string
 }
 
+export interface AlarmHistoryEntry {
+  id: string
+  occurredAt: string
+  type: string
+  level: number
+  title: string
+  message: string | null
+}
+
 export interface AdminAuditEntry {
   id: string
   occurredAt: string
@@ -103,6 +112,8 @@ export const api = {
       )}&count=1000`,
     ),
   properties: () => request<PluginProperties>('/api/v1/properties'),
+  alarmHistory: (limit = 50) =>
+    request<AlarmHistoryEntry[]>(`/api/v1/alarms/history?limit=${limit}`),
   verifyAuth: () =>
     request<{
       message: string
