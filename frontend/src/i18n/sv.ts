@@ -20,7 +20,7 @@ export const sv: Translation = {
     sections: {
       graphRange: 'Tidsintervall för graf',
       tirWindow: 'Tidsfönster för Tid i Mål',
-      ranges: 'Glukosområden (mg/dL)',
+      ranges: 'Glukosområden ({{unit}})',
       chartLine: 'Linje i grafen',
       agp: 'Typisk dag-överlägg',
     },

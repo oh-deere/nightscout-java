@@ -23,7 +23,7 @@ import {
   type ChartHours,
   type TirHours,
 } from '../hooks/useViewSettings'
-import { useVerifyAuth } from '../hooks/useNightscoutData'
+import { useStatus, useVerifyAuth } from '../hooks/useNightscoutData'
 
 const AdminDialog = lazy(() =>
   import('./AdminDialog').then((m) => ({ default: m.AdminDialog })),
@@ -42,6 +42,8 @@ export function SettingsMenu() {
   const settings = useViewSettings()
   const auth = useVerifyAuth()
   const isAdmin = auth.data?.admin === true
+  const status = useStatus()
+  const isMmol = status.data?.settings.units === 'mmol/l'
   const { t } = useTranslation()
 
   return (
@@ -91,8 +93,8 @@ export function SettingsMenu() {
 
             <Divider />
 
-            <Section label={t('settings.sections.ranges')}>
-              <RangeEditor ranges={settings.ranges} onChange={settings.setRanges} />
+            <Section label={t('settings.sections.ranges', { unit: isMmol ? 'mmol/L' : 'mg/dL' })}>
+              <RangeEditor ranges={settings.ranges} onChange={settings.setRanges} isMmol={isMmol} />
               <Button size="small" onClick={settings.resetRanges} sx={{ alignSelf: 'flex-end' }}>
                 {t('settings.ranges.reset')}
               </Button>
@@ -198,15 +200,19 @@ function Section({ label, children }: { label: string; children: React.ReactNode
 function RangeEditor({
   ranges,
   onChange,
+  isMmol,
 }: {
   ranges: BgRanges
   onChange: (next: BgRanges) => void
+  isMmol: boolean
 }) {
   const { t } = useTranslation()
+  // Storage is always mg/dL; the input box shows whichever unit the user picked.
   const update = (key: keyof BgRanges) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = parseInt(e.target.value, 10)
-    if (Number.isNaN(v)) return
-    onChange({ ...ranges, [key]: v })
+    const raw = parseFloat(e.target.value)
+    if (Number.isNaN(raw)) return
+    const mgdl = isMmol ? Math.round(raw * 18) : Math.round(raw)
+    onChange({ ...ranges, [key]: mgdl })
   }
 
   return (
@@ -216,24 +222,28 @@ function RangeEditor({
         value={ranges.urgentHigh}
         onChange={update('urgentHigh')}
         color="#e53935"
+        isMmol={isMmol}
       />
       <RangeRow
         label={t('settings.ranges.targetHigh')}
         value={ranges.targetHigh}
         onChange={update('targetHigh')}
         color="#ffb300"
+        isMmol={isMmol}
       />
       <RangeRow
         label={t('settings.ranges.targetLow')}
         value={ranges.targetLow}
         onChange={update('targetLow')}
         color="#ffb300"
+        isMmol={isMmol}
       />
       <RangeRow
         label={t('settings.ranges.urgentLow')}
         value={ranges.urgentLow}
         onChange={update('urgentLow')}
         color="#e53935"
+        isMmol={isMmol}
       />
     </Stack>
   )
@@ -244,12 +254,17 @@ function RangeRow({
   value,
   onChange,
   color,
+  isMmol,
 }: {
   label: string
   value: number
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
   color: string
+  isMmol: boolean
 }) {
+  // value is always stored mg/dL; show whichever unit is active.
+  const displayValue = isMmol ? (Math.round((value / 18) * 10) / 10).toString() : value.toString()
+  const unitLabel = isMmol ? 'mmol/L' : 'mg/dL'
   return (
     <Stack direction="row" alignItems="center" spacing={1.5}>
       <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: color }} />
@@ -259,14 +274,19 @@ function RangeRow({
       <TextField
         size="small"
         type="number"
-        value={value}
+        value={displayValue}
         onChange={onChange}
-        sx={{ width: 110 }}
+        sx={{ width: 120 }}
         slotProps={{
           input: {
-            endAdornment: <InputAdornment position="end">mg/dL</InputAdornment>,
+            endAdornment: <InputAdornment position="end">{unitLabel}</InputAdornment>,
           },
-          htmlInput: { min: 30, max: 600, style: { textAlign: 'right' } },
+          htmlInput: {
+            min: isMmol ? 1.7 : 30,
+            max: isMmol ? 33 : 600,
+            step: isMmol ? 0.1 : 1,
+            style: { textAlign: 'right' },
+          },
         }}
       />
     </Stack>

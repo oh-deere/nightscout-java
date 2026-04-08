@@ -18,7 +18,7 @@ export const en = {
     sections: {
       graphRange: 'Graph time range',
       tirWindow: 'Time in Range window',
-      ranges: 'Glucose ranges (mg/dL)',
+      ranges: 'Glucose ranges ({{unit}})',
       chartLine: 'Chart line',
       agp: 'Typical-day overlay',
     },
