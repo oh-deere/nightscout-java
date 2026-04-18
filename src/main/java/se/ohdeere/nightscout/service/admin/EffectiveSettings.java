@@ -35,7 +35,7 @@ public class EffectiveSettings {
 	 * ----------
 	 */
 
-	private static final String DEFAULT_UNITS = "mg/dl";
+	private static final String DEFAULT_UNITS = "mmol/l";
 
 	private static final int DEFAULT_TIME_FORMAT = 24;
 

@@ -7,7 +7,7 @@
 -- overwrites a value the user has already changed.
 
 INSERT INTO runtime_settings (key, value, updated_by) VALUES
-    ('units',                    '"mg/dl"',     'system'),
+    ('units',                    '"mmol/l"',    'system'),
     ('customTitle',              '"Nightscout"','system'),
     ('theme',                    '"default"',   'system'),
     ('language',                 '"en"',        'system'),
