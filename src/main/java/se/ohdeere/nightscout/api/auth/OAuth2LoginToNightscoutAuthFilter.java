@@ -12,6 +12,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import se.ohdeere.nightscout.service.auth.NightscoutAuth;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -40,6 +42,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * {@link NightscoutAuth} so the downstream permission check denies them.
  */
 public class OAuth2LoginToNightscoutAuthFilter extends OncePerRequestFilter {
+
+	private static final Logger log = LoggerFactory.getLogger(OAuth2LoginToNightscoutAuthFilter.class);
 
 	private final Set<String> adminAllowlist;
 
@@ -74,6 +78,8 @@ public class OAuth2LoginToNightscoutAuthFilter extends OncePerRequestFilter {
 
 		boolean isAdmin = (email != null && this.adminAllowlist.contains(email))
 				|| (sub != null && this.adminAllowlist.contains(sub));
+		log.info("OAuth login bridge: email={} sub={} allowlist={} admin={}", email, sub,
+				this.adminAllowlist, isAdmin);
 		if (isAdmin) {
 			return NightscoutAuth.adminAuth(identity);
 		}
