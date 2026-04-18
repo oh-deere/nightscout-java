@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react'
+import { useNowMs } from '../hooks/useNowMs'
 import { Group } from '@visx/group'
 import { scaleLinear, scaleTime } from '@visx/scale'
 import { AxisBottom, AxisLeft } from '@visx/axis'
@@ -144,7 +145,7 @@ function BgChartInner({
   const innerWidth = Math.max(0, width - margin.left - margin.right)
   const innerHeight = Math.max(0, height - margin.top - margin.bottom)
 
-  const now = Date.now()
+  const now = useNowMs(60_000)
   const xMin = now - hours * 3600_000
 
   // SGVs sorted oldest -> newest for line drawing & bisection
@@ -185,7 +186,10 @@ function BgChartInner({
     })
   }, [yMinMgdl, yMaxMgdl, innerHeight, settings.units])
 
-  const toY = (mgdl: number) => yScale(settings.units === 'mmol/l' ? mgdl / 18 : mgdl)
+  const toY = useCallback(
+    (mgdl: number) => yScale(settings.units === 'mmol/l' ? mgdl / 18 : mgdl),
+    [yScale, settings.units],
+  )
 
   const targetTopY = toY(settings.thresholds.bgTargetTop)
   const targetBottomY = toY(settings.thresholds.bgTargetBottom)

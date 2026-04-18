@@ -71,7 +71,7 @@ export function BgHeader({ current, previous, settings, properties }: Props) {
   const color = bgColor(sgv, settings.thresholds)
   const arrow = current.direction ? (DIRECTION_ARROW[current.direction] ?? '') : ''
   const delta = previous?.sgv != null ? sgv - previous.sgv : null
-  const ageMins = Math.round((Date.now() - current.date) / 60000)
+  const ageMins = Math.round((now.getTime() - current.date) / 60000)
   const stale = ageMins > 15
 
   const iobValue = properties?.iob?.data?.iob as number | undefined

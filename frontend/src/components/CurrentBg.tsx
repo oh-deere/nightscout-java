@@ -3,6 +3,7 @@ import type { Entry, NightscoutSettings } from '../types/nightscout'
 import { DIRECTION_ARROW, formatBg, formatDelta } from '../utils/units'
 import { bgColor } from '../theme/theme'
 import { formatDistanceToNowStrict } from 'date-fns'
+import { useNowMs } from '../hooks/useNowMs'
 
 interface Props {
   current: Entry | null
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function CurrentBg({ current, previous, settings }: Props) {
+  const nowMs = useNowMs()
   if (!current || current.sgv == null) {
     return (
       <Box sx={{ textAlign: 'center', py: 6 }}>
@@ -28,7 +30,7 @@ export function CurrentBg({ current, previous, settings }: Props) {
   const color = bgColor(sgv, settings.thresholds)
   const arrow = current.direction ? (DIRECTION_ARROW[current.direction] ?? '') : ''
   const delta = previous?.sgv != null ? sgv - previous.sgv : null
-  const ageMins = Math.round((Date.now() - current.date) / 60000)
+  const ageMins = Math.round((nowMs - current.date) / 60000)
   const stale = ageMins > 15
 
   return (
