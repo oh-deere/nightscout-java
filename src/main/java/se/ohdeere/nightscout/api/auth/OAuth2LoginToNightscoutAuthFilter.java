@@ -78,8 +78,7 @@ public class OAuth2LoginToNightscoutAuthFilter extends OncePerRequestFilter {
 
 		boolean isAdmin = (email != null && this.adminAllowlist.contains(email))
 				|| (sub != null && this.adminAllowlist.contains(sub));
-		log.info("OAuth login bridge: email={} sub={} allowlist={} admin={}", email, sub,
-				this.adminAllowlist, isAdmin);
+		log.info("OAuth login bridge: email={} sub={} allowlist={} admin={}", email, sub, this.adminAllowlist, isAdmin);
 		if (isAdmin) {
 			return NightscoutAuth.adminAuth(identity);
 		}
