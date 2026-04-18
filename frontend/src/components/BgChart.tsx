@@ -177,8 +177,7 @@ function BgChartInner({
   )
 
   const yScale = useMemo(() => {
-    const toDisplay = (mgdl: number) =>
-      settings.units === 'mmol/l' ? mgdl / 18 : mgdl
+    const toDisplay = (mgdl: number) => (settings.units === 'mmol/l' ? mgdl / 18 : mgdl)
     return scaleLinear({
       domain: [toDisplay(yMinMgdl), toDisplay(yMaxMgdl)],
       range: [innerHeight, 0],
@@ -186,8 +185,7 @@ function BgChartInner({
     })
   }, [yMinMgdl, yMaxMgdl, innerHeight, settings.units])
 
-  const toY = (mgdl: number) =>
-    yScale(settings.units === 'mmol/l' ? mgdl / 18 : mgdl)
+  const toY = (mgdl: number) => yScale(settings.units === 'mmol/l' ? mgdl / 18 : mgdl)
 
   const targetTopY = toY(settings.thresholds.bgTargetTop)
   const targetBottomY = toY(settings.thresholds.bgTargetBottom)
@@ -195,14 +193,8 @@ function BgChartInner({
   const urgentLowY = toY(settings.thresholds.bgLow)
   const bandHeight = targetBottomY - targetTopY
 
-  const {
-    showTooltip,
-    hideTooltip,
-    tooltipData,
-    tooltipLeft,
-    tooltipTop,
-    tooltipOpen,
-  } = useTooltip<TooltipData>()
+  const { showTooltip, hideTooltip, tooltipData, tooltipLeft, tooltipTop, tooltipOpen } =
+    useTooltip<TooltipData>()
 
   const handleHover = useCallback(
     (event: React.MouseEvent<SVGRectElement> | React.TouchEvent<SVGRectElement>) => {
@@ -519,7 +511,7 @@ function BgChartInner({
             </span>
             <span style={{ fontSize: 18 }}>
               {tooltipData.entry.direction
-                ? DIRECTION_ARROW[tooltipData.entry.direction] ?? ''
+                ? (DIRECTION_ARROW[tooltipData.entry.direction] ?? '')
                 : ''}
             </span>
             <span style={{ color: '#888', fontSize: 11 }}>{settings.units}</span>

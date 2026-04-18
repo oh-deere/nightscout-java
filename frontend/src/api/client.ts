@@ -1,9 +1,4 @@
-import type {
-  Entry,
-  NightscoutStatus,
-  PluginProperties,
-  Treatment,
-} from '../types/nightscout'
+import type { Entry, NightscoutStatus, PluginProperties, Treatment } from '../types/nightscout'
 
 const SECRET_KEY = 'nightscout.apiSecretHash'
 

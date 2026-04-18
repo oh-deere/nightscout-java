@@ -1,40 +1,24 @@
 import { useState } from 'react'
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Divider,
-  Stack,
-  TextField,
-  Typography,
-} from '@mui/material'
+import { Box, Button, Divider, Paper, Stack, TextField, Typography } from '@mui/material'
 import LoginIcon from '@mui/icons-material/Login'
 import { useTranslation } from 'react-i18next'
 import { setApiSecretHash } from '../api/client'
 import { useStatus } from '../hooks/useNightscoutData'
 import { sha1Hex } from '../utils/sha1'
 
-interface Props {
-  open: boolean
-  onClose: () => void
-}
-
-export function ApiSecretDialog({ open, onClose }: Props) {
+export function LoginScreen() {
   const [secret, setSecret] = useState('')
   const [busy, setBusy] = useState(false)
   const { t } = useTranslation()
   const status = useStatus()
   const oauthProviders = status.data?.oauth?.enabled ? (status.data.oauth.providers ?? []) : []
+  const title = status.data?.settings.customTitle ?? t('app.title')
 
   const handleSave = async () => {
     setBusy(true)
     try {
       const hash = await sha1Hex(secret)
       setApiSecretHash(hash)
-      onClose()
       window.location.reload()
     } finally {
       setBusy(false)
@@ -42,9 +26,23 @@ export function ApiSecretDialog({ open, onClose }: Props) {
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>{t('auth.title')}</DialogTitle>
-      <DialogContent>
+    <Box
+      sx={{
+        width: '100vw',
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: 2,
+      }}
+    >
+      <Paper elevation={3} sx={{ p: 4, maxWidth: 380, width: '100%' }}>
+        <Typography variant="h5" sx={{ mb: 0.5, fontWeight: 600 }}>
+          {title}
+        </Typography>
+        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 3 }}>
+          {t('auth.title')}
+        </Typography>
         {oauthProviders.length > 0 && (
           <Stack spacing={1} sx={{ mb: 2 }}>
             {oauthProviders.map((p) => (
@@ -66,26 +64,32 @@ export function ApiSecretDialog({ open, onClose }: Props) {
             </Divider>
           </Stack>
         )}
-        <DialogContentText>{t('auth.description')}</DialogContentText>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          {t('auth.description')}
+        </Typography>
         <TextField
           autoFocus
-          margin="dense"
           type="password"
           fullWidth
           variant="outlined"
+          size="small"
           value={secret}
           onChange={(e) => setSecret(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && secret) handleSave()
+            if (e.key === 'Enter' && secret) void handleSave()
           }}
           placeholder={t('auth.placeholder')}
+          sx={{ mb: 2 }}
         />
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={handleSave} disabled={!secret || busy} variant="contained">
+        <Button
+          onClick={() => void handleSave()}
+          disabled={!secret || busy}
+          variant="contained"
+          fullWidth
+        >
           {t('auth.save')}
         </Button>
-      </DialogActions>
-    </Dialog>
+      </Paper>
+    </Box>
   )
 }

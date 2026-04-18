@@ -26,7 +26,7 @@ export function CurrentBg({ current, previous, settings }: Props) {
 
   const sgv = current.sgv
   const color = bgColor(sgv, settings.thresholds)
-  const arrow = current.direction ? DIRECTION_ARROW[current.direction] ?? '' : ''
+  const arrow = current.direction ? (DIRECTION_ARROW[current.direction] ?? '') : ''
   const delta = previous?.sgv != null ? sgv - previous.sgv : null
   const ageMins = Math.round((Date.now() - current.date) / 60000)
   const stale = ageMins > 15

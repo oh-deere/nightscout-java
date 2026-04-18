@@ -16,6 +16,7 @@ export const sv: Translation = {
     save: 'Spara',
     signInWith: 'Logga in med {{provider}}',
     orApiSecret: 'eller använd API-nyckeln',
+    signedInAs: 'Inloggad som {{subject}}',
   },
   settings: {
     open: 'Visa inställningar',

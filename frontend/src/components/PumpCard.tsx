@@ -105,15 +105,7 @@ export function PumpCard({ properties }: Props) {
   )
 }
 
-function Metric({
-  label,
-  value,
-  icon,
-}: {
-  label: string
-  value: string
-  icon?: React.ReactNode
-}) {
+function Metric({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
   return (
     <Stack spacing={0.25}>
       <Typography variant="caption" color="text.secondary">

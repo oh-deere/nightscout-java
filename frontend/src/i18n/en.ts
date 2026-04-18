@@ -14,6 +14,7 @@ export const en = {
     save: 'Save',
     signInWith: 'Sign in with {{provider}}',
     orApiSecret: 'or use the API secret',
+    signedInAs: 'Signed in as {{subject}}',
   },
   settings: {
     open: 'View settings',

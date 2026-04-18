@@ -8,12 +8,9 @@ interface Props {
 export function PluginPills({ properties }: Props) {
   if (!properties) return null
 
-  const pills: Array<{ label: string; value: string; color?: 'default' | 'warning' | 'error' }> =
-    []
+  const pills: Array<{ label: string; value: string; color?: 'default' | 'warning' | 'error' }> = []
 
-  const addPlugin = (
-    p: { label: string; value: string; level?: string } | undefined,
-  ) => {
+  const addPlugin = (p: { label: string; value: string; level?: string } | undefined) => {
     if (!p || !p.value || p.value === 'N/A') return
     const color = p.level === 'urgent' ? 'error' : p.level === 'warn' ? 'warning' : 'default'
     pills.push({ label: p.label, value: p.value, color })

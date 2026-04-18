@@ -69,7 +69,7 @@ export function BgHeader({ current, previous, settings, properties }: Props) {
 
   const sgv = current.sgv
   const color = bgColor(sgv, settings.thresholds)
-  const arrow = current.direction ? DIRECTION_ARROW[current.direction] ?? '' : ''
+  const arrow = current.direction ? (DIRECTION_ARROW[current.direction] ?? '') : ''
   const delta = previous?.sgv != null ? sgv - previous.sgv : null
   const ageMins = Math.round((Date.now() - current.date) / 60000)
   const stale = ageMins > 15
@@ -97,9 +97,7 @@ export function BgHeader({ current, previous, settings, properties }: Props) {
         >
           {formatTime(now)}
         </Typography>
-        <Typography
-          sx={{ color: 'text.disabled', fontSize: { xs: 12, sm: 14 } }}
-        >
+        <Typography sx={{ color: 'text.disabled', fontSize: { xs: 12, sm: 14 } }}>
           {now.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
         </Typography>
       </SideColumn>
@@ -118,9 +116,7 @@ export function BgHeader({ current, previous, settings, properties }: Props) {
           >
             {formatBg(sgv, settings.units)}
           </Typography>
-          <Typography
-            sx={{ fontSize: { xs: '2.5rem', sm: '3.5rem' }, color, lineHeight: 0.9 }}
-          >
+          <Typography sx={{ fontSize: { xs: '2.5rem', sm: '3.5rem' }, color, lineHeight: 0.9 }}>
             {arrow}
           </Typography>
         </Stack>
@@ -153,13 +149,7 @@ export function BgHeader({ current, previous, settings, properties }: Props) {
   )
 }
 
-function SideColumn({
-  align,
-  children,
-}: {
-  align: 'left' | 'right'
-  children?: React.ReactNode
-}) {
+function SideColumn({ align, children }: { align: 'left' | 'right'; children?: React.ReactNode }) {
   return (
     <Stack
       sx={{

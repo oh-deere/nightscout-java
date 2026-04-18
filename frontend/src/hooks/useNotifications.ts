@@ -102,9 +102,7 @@ export function useAlarmNotifier(
             : alarm === 'high'
               ? 'High'
               : 'Low'
-      const body = current.sgv
-        ? `${formatBg(current.sgv, settings.units)} ${settings.units}`
-        : ''
+      const body = current.sgv ? `${formatBg(current.sgv, settings.units)} ${settings.units}` : ''
       new Notification(title, {
         body,
         tag: alarm,

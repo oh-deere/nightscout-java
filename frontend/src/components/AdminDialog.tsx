@@ -354,7 +354,9 @@ function SettingsTab() {
               {settings.data.map((s: AdminSetting) => (
                 <TableRow key={s.key}>
                   <TableCell>{s.key}</TableCell>
-                  <TableCell sx={{ fontFamily: 'monospace', maxWidth: 280, wordBreak: 'break-all' }}>
+                  <TableCell
+                    sx={{ fontFamily: 'monospace', maxWidth: 280, wordBreak: 'break-all' }}
+                  >
                     {s.value}
                   </TableCell>
                   <TableCell>{formatDate(s.updatedAt)}</TableCell>
@@ -422,7 +424,9 @@ function AlarmHistoryTab() {
                     <Chip
                       size="small"
                       color={e.level >= 3 ? 'error' : 'warning'}
-                      label={e.level >= 3 ? t('admin.alarms.level.urgent') : t('admin.alarms.level.warn')}
+                      label={
+                        e.level >= 3 ? t('admin.alarms.level.urgent') : t('admin.alarms.level.warn')
+                      }
                     />
                   </TableCell>
                   <TableCell>{e.title}</TableCell>

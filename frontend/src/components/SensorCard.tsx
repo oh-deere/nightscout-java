@@ -36,17 +36,9 @@ export function SensorCard({ properties, sensorLifeHours = 14 * 24 }: Props) {
   return (
     <Card sx={{ p: 2 }}>
       <Stack direction="row" alignItems="center" spacing={2}>
-        <SensorsIcon
-          color={color}
-          sx={{ fontSize: 32 }}
-        />
+        <SensorsIcon color={color} sx={{ fontSize: 32 }} />
         <Stack sx={{ flex: 1, minWidth: 0 }} spacing={0.5}>
-          <Stack
-            direction="row"
-            alignItems="baseline"
-            justifyContent="space-between"
-            spacing={1}
-          >
+          <Stack direction="row" alignItems="baseline" justifyContent="space-between" spacing={1}>
             <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
               Sensor
             </Typography>

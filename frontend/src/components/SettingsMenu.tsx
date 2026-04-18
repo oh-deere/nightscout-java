@@ -25,9 +25,7 @@ import {
 } from '../hooks/useViewSettings'
 import { useStatus, useVerifyAuth } from '../hooks/useNightscoutData'
 
-const AdminDialog = lazy(() =>
-  import('./AdminDialog').then((m) => ({ default: m.AdminDialog })),
-)
+const AdminDialog = lazy(() => import('./AdminDialog').then((m) => ({ default: m.AdminDialog })))
 
 const CHART_OPTIONS: ChartHours[] = [3, 6, 12, 24]
 const TIR_OPTIONS: { hours: TirHours; label: string }[] = [
