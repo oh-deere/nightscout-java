@@ -47,6 +47,16 @@ export const sv: Translation = {
       days: '{{count}}d',
     },
     adminButton: 'Användar- och drift­administration',
+    aboutButton: 'Om',
+  },
+  about: {
+    title: 'Om',
+    version: 'Version',
+    commit: 'Commit',
+    branch: 'Gren',
+    commitTime: 'Commit-tid',
+    buildTime: 'Byggnadstid',
+    loadFailed: 'Kunde inte läsa byggnadsinfo',
   },
   alarms: {
     snooze: 'Snooza {{minutes}}m',

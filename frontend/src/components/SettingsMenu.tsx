@@ -16,6 +16,7 @@ import {
 } from '@mui/material'
 import SettingsIcon from '@mui/icons-material/Settings'
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import { useTranslation } from 'react-i18next'
 import {
   useViewSettings,
@@ -26,6 +27,7 @@ import {
 import { useStatus, useVerifyAuth } from '../hooks/useNightscoutData'
 
 const AdminDialog = lazy(() => import('./AdminDialog').then((m) => ({ default: m.AdminDialog })))
+const AboutDialog = lazy(() => import('./AboutDialog').then((m) => ({ default: m.AboutDialog })))
 
 const CHART_OPTIONS: ChartHours[] = [3, 6, 12, 24]
 const TIR_OPTIONS: { hours: TirHours; label: string }[] = [
@@ -37,6 +39,7 @@ const TIR_OPTIONS: { hours: TirHours; label: string }[] = [
 export function SettingsMenu() {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const [adminOpen, setAdminOpen] = useState(false)
+  const [aboutOpen, setAboutOpen] = useState(false)
   const settings = useViewSettings()
   const auth = useVerifyAuth()
   const isAdmin = auth.data?.admin === true
@@ -172,12 +175,30 @@ export function SettingsMenu() {
                 </Button>
               </>
             )}
+
+            <Divider />
+            <Button
+              variant="text"
+              size="small"
+              startIcon={<InfoOutlinedIcon />}
+              onClick={() => {
+                setAnchor(null)
+                setAboutOpen(true)
+              }}
+            >
+              {t('settings.aboutButton')}
+            </Button>
           </Stack>
         </Box>
       </Popover>
       {adminOpen && (
         <Suspense fallback={null}>
           <AdminDialog open={adminOpen} onClose={() => setAdminOpen(false)} />
+        </Suspense>
+      )}
+      {aboutOpen && (
+        <Suspense fallback={null}>
+          <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
         </Suspense>
       )}
     </>

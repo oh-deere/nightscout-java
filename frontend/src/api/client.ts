@@ -94,6 +94,24 @@ export interface AdminAuditEntry {
   afterValue: { value: string } | null
 }
 
+export interface ActuatorInfo {
+  git?: {
+    branch?: string
+    commit?: {
+      id?: string | { abbrev?: string; full?: string }
+      time?: string
+    }
+    dirty?: boolean
+  }
+  build?: {
+    artifact?: string
+    name?: string
+    time?: string
+    version?: string
+    group?: string
+  }
+}
+
 export class ApiError extends Error {
   status: number
   constructor(message: string, status: number) {
@@ -134,6 +152,7 @@ export const api = {
       permissions?: string[]
       admin?: boolean
     }>('/api/v1/verifyauth'),
+  info: () => request<ActuatorInfo>('/actuator/info'),
 
   admin: {
     listKeys: () => request<AdminApiKey[]>('/api/v2/admin/keys'),

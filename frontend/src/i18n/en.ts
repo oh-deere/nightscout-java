@@ -45,6 +45,16 @@ export const en = {
       days: '{{count}}d',
     },
     adminButton: 'User & runtime admin',
+    aboutButton: 'About',
+  },
+  about: {
+    title: 'About',
+    version: 'Version',
+    commit: 'Commit',
+    branch: 'Branch',
+    commitTime: 'Commit time',
+    buildTime: 'Build time',
+    loadFailed: 'Failed to load build info',
   },
   alarms: {
     snooze: 'Snooze {{minutes}}m',
