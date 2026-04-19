@@ -1,0 +1,46 @@
+# Weekly grouped Dependabot updates for a Maven / Spring Boot project.
+# Generated from wimo-infra/dependabot-templates/java.yml — keep in sync.
+version: 2
+updates:
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Stockholm"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "java"
+    groups:
+      spring:
+        patterns:
+          - "org.springframework*"
+          - "io.spring*"
+          - "de.codecentric*"
+      spring-ai:
+        patterns:
+          - "org.springframework.ai*"
+          - "org.springaicommunity*"
+      test-libs:
+        patterns:
+          - "org.testcontainers*"
+          - "org.mockito*"
+          - "org.junit*"
+          - "org.assertj*"
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    groups:
+      actions:
+        patterns: ["*"]
