@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>4.0.3</version>
+		<version>4.0.5</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>se.ohdeere.nightscout</groupId>
@@ -16,9 +16,9 @@
 	<description>Nightscout CGM server rewritten in Java — Spring Boot 4, PostgreSQL</description>
 	<properties>
 		<java.version>25</java.version>
-		<spring-javaformat.version>0.0.45</spring-javaformat.version>
+		<spring-javaformat.version>0.0.47</spring-javaformat.version>
 		<spring-ai.version>2.0.0-M2</spring-ai.version>
-		<testcontainers.version>2.0.3</testcontainers.version>
+		<testcontainers.version>2.0.4</testcontainers.version>
 	</properties>
 	<dependencyManagement>
 		<dependencies>
@@ -102,24 +102,24 @@
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-api</artifactId>
-			<version>0.12.5</version>
+			<version>0.13.0</version>
 		</dependency>
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-impl</artifactId>
-			<version>0.12.5</version>
+			<version>0.13.0</version>
 			<scope>runtime</scope>
 		</dependency>
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-jackson</artifactId>
-			<version>0.12.5</version>
+			<version>0.13.0</version>
 			<scope>runtime</scope>
 		</dependency>
 		<dependency>
 			<groupId>de.codecentric</groupId>
 			<artifactId>spring-boot-admin-starter-client</artifactId>
-			<version>4.0.2</version>
+			<version>4.0.3</version>
 		</dependency>
 		<dependency>
 			<groupId>net.logstash.logback</groupId>
@@ -228,7 +228,7 @@
 			<plugin>
 				<groupId>org.asciidoctor</groupId>
 				<artifactId>asciidoctor-maven-plugin</artifactId>
-				<version>3.1.1</version>
+				<version>3.2.0</version>
 				<executions>
 					<execution>
 						<id>generate-docs</id>
@@ -273,7 +273,7 @@
 			<plugin>
 				<groupId>com.google.cloud.tools</groupId>
 				<artifactId>jib-maven-plugin</artifactId>
-				<version>3.4.5</version>
+				<version>3.5.1</version>
 			</plugin>
 			<plugin>
 				<groupId>io.github.git-commit-id</groupId>
